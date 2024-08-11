@@ -43,6 +43,13 @@ def mock_config_entry(hass):
     return entry
 
 
+@pytest.fixture
+async def mock_init_component(hass, mock_config_entry):
+    """Initialize integration."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+
+
 @pytest.fixture(autouse=True)
 async def setup_ha(hass: HomeAssistant) -> None:
     """Set up Home Assistant."""

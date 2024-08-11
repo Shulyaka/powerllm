@@ -3,7 +3,6 @@
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, intent
-from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockUser
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
@@ -17,9 +16,9 @@ async def test_http_api_list(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
     hass_admin_user: MockUser,
+    mock_init_component,
 ) -> None:
     """Test LLM API list via HTTP API."""
-    assert await async_setup_component(hass, "powerllm", {})
     client = await hass_client()
     resp = await client.get("/api/powerllm")
 
@@ -34,9 +33,9 @@ async def test_http_tool_list(
     hass_client: ClientSessionGenerator,
     hass_admin_user: MockUser,
     snapshot: SnapshotAssertion,
+    mock_init_component,
 ) -> None:
     """Test LLM Tool list via HTTP API."""
-    assert await async_setup_component(hass, "powerllm", {})
 
     class TestIntentHandler(intent.IntentHandler):
         """Test Intent Handler."""
@@ -119,10 +118,12 @@ async def test_http_tool_list(
 
 
 async def test_http_tool(
-    hass: HomeAssistant, hass_client: ClientSessionGenerator, hass_admin_user: MockUser
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    hass_admin_user: MockUser,
+    mock_init_component,
 ) -> None:
     """Test LLM Tool via HTTP API."""
-    assert await async_setup_component(hass, "powerllm", {})
 
     class TestIntentHandler(intent.IntentHandler):
         """Test Intent Handler."""
