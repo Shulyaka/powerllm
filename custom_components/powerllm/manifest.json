@@ -1,0 +1,13 @@
+{
+  "domain": "powerllm",
+  "name": "LLM Tools HTTP API",
+  "codeowners": ["@Shulyaka"],
+  "config_flow": true,
+  "dependencies": ["assist_pipeline", "http", "intent", "script"],
+  "documentation": "https://github.com/Shulyaka/powerllm/blob/master/README.md",
+  "issue_tracker": "https://github.com/Shulyaka/powerllm/issues",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "requirements": [],
+  "version": "0.0.1"
+}

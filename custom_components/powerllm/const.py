@@ -1,0 +1,3 @@
+"""Power LLM."""
+
+DOMAIN = "powerllm"

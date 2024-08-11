@@ -1,0 +1,125 @@
+# serializer version: 1
+# name: test_http_tool_list
+  dict({
+    'prompt': 'Only if the user wants to control a device, tell them to expose entities to their voice assistant in Home Assistant.',
+    'tools': list([
+      dict({
+        'description': 'Turns on/opens a device or entity',
+        'name': 'HassTurnOn',
+        'parameters': dict({
+          'properties': dict({
+            'area': dict({
+              'type': 'string',
+            }),
+            'device_class': dict({
+              'items': dict({
+                'enum': list([
+                  'awning',
+                  'blind',
+                  'curtain',
+                  'damper',
+                  'door',
+                  'garage',
+                  'gas',
+                  'gate',
+                  'outlet',
+                  'receiver',
+                  'shade',
+                  'shutter',
+                  'speaker',
+                  'switch',
+                  'tv',
+                  'water',
+                  'window',
+                ]),
+                'type': 'string',
+              }),
+              'type': 'array',
+            }),
+            'domain': dict({
+              'items': dict({
+                'type': 'string',
+              }),
+              'type': 'array',
+            }),
+            'floor': dict({
+              'type': 'string',
+            }),
+            'name': dict({
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+          ]),
+          'type': 'object',
+        }),
+      }),
+      dict({
+        'description': 'Turns off/closes a device or entity',
+        'name': 'HassTurnOff',
+        'parameters': dict({
+          'properties': dict({
+            'area': dict({
+              'type': 'string',
+            }),
+            'device_class': dict({
+              'items': dict({
+                'enum': list([
+                  'awning',
+                  'blind',
+                  'curtain',
+                  'damper',
+                  'door',
+                  'garage',
+                  'gas',
+                  'gate',
+                  'outlet',
+                  'receiver',
+                  'shade',
+                  'shutter',
+                  'speaker',
+                  'switch',
+                  'tv',
+                  'water',
+                  'window',
+                ]),
+                'type': 'string',
+              }),
+              'type': 'array',
+            }),
+            'domain': dict({
+              'items': dict({
+                'type': 'string',
+              }),
+              'type': 'array',
+            }),
+            'floor': dict({
+              'type': 'string',
+            }),
+            'name': dict({
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+          ]),
+          'type': 'object',
+        }),
+      }),
+      dict({
+        'description': 'Orders beer',
+        'name': 'OrderBeer',
+        'parameters': dict({
+          'properties': dict({
+            'type': dict({
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'type',
+          ]),
+          'type': 'object',
+        }),
+      }),
+    ]),
+  })
+# ---
