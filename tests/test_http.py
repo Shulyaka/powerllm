@@ -9,6 +9,10 @@ from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
 
 
+def test_test(hass):
+    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
+
+
 async def test_http_api_list(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
