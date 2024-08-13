@@ -17,7 +17,12 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_PROMPT_ENTITIES, CONF_SCRIPT_EXPOSED_ONLY, DOMAIN
+from .const import (
+    CONF_INTENT_ENTITIES,
+    CONF_PROMPT_ENTITIES,
+    CONF_SCRIPT_EXPOSED_ONLY,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +35,7 @@ DATA_SCHEMA = vol.Schema(
 OPTIONS_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
+        vol.Required(CONF_INTENT_ENTITIES, default=True): bool,
         vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
     }
 )

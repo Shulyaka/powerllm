@@ -24,7 +24,12 @@ from homeassistant.helpers import (
 )
 from homeassistant.util import yaml
 
-from .const import CONF_PROMPT_ENTITIES, CONF_SCRIPT_EXPOSED_ONLY, DOMAIN
+from .const import (
+    CONF_INTENT_ENTITIES,
+    CONF_PROMPT_ENTITIES,
+    CONF_SCRIPT_EXPOSED_ONLY,
+    DOMAIN,
+)
 from .llm_tools import PowerIntentTool, PowerLLMTool, PowerScriptTool
 from .tools.script import DynamicScriptTool
 
@@ -183,6 +188,9 @@ class PowerLLMAPI(llm.API):
                 intent.INTENT_TIMER_STATUS,
             }
 
+        if not self.config_entry.options[CONF_INTENT_ENTITIES]:
+            ignore_intents.append(intent.INTENT_GET_STATE)
+
         intent_handlers = [
             intent_handler
             for intent_handler in intent.async_get(self.hass)
@@ -204,7 +212,9 @@ class PowerLLMAPI(llm.API):
 
         tools: list[PowerLLMTool] = [
             PowerIntentTool(
-                self.cached_slugify(intent_handler.intent_type), intent_handler
+                self.cached_slugify(intent_handler.intent_type),
+                intent_handler,
+                self.config_entry.options[CONF_INTENT_ENTITIES],
             )
             for intent_handler in intent_handlers
         ]

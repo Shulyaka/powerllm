@@ -184,10 +184,12 @@ class PowerIntentTool(PowerLLMTool):
         self,
         name: str,
         intent_handler: intent.IntentHandler,
+        response_entities: bool = False,
     ) -> None:
         """Init the class."""
         self.name = name
         self.intent_handler = intent_handler
+        self._response_entities = response_entities
         self.description = (
             intent_handler.description or f"Execute Home Assistant {self.name} intent"
         )
@@ -250,11 +252,11 @@ class PowerIntentTool(PowerLLMTool):
             device_id=llm_context.device_id,
         )
         response = intent_response.as_dict()
-        if intent_response.matched_states:
+        if self._response_entities and intent_response.matched_states:
             response["data"]["matched_states"] = [
                 _format_state(hass, state) for state in intent_response.matched_states
             ]
-        if intent_response.unmatched_states:
+        if self._response_entities and intent_response.unmatched_states:
             response["data"]["unmatched_states"] = [
                 _format_state(hass, state) for state in intent_response.unmatched_states
             ]
