@@ -17,7 +17,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
-from . import DOMAIN
+from .const import CONF_PROMPT_ENTITIES, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,9 +29,13 @@ DATA_SCHEMA = vol.Schema(
 
 OPTIONS_SCHEMA = vol.Schema(
     {
-        vol.Required("test"): str,
+        vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
     }
 )
+
+DEFAULT_OPTIONS = {
+    CONF_PROMPT_ENTITIES: True,
+}
 
 
 class PowerLLMBaseFlow:
@@ -99,7 +103,7 @@ class PowerLLMConfigFlow(PowerLLMBaseFlow, ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize config flow."""
         self.data: Mapping[str, Any] = {}
-        self.options: Mapping[str, Any] = {}
+        self.options: Mapping[str, Any] = DEFAULT_OPTIONS
 
     @staticmethod
     @callback

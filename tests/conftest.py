@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm import DOMAIN
 
+from .const import MOCK_CONFIG, MOCK_OPTIONS_CONFIG
+
 
 # This fixture enables loading custom integrations in all tests.
 # Remove to enable selective use of this fixture
@@ -36,8 +38,8 @@ def mock_config_entry(hass):
     entry = MockConfigEntry(
         title="PowerLLM",
         domain=DOMAIN,
-        data={"name": "PowerLLM"},
-        options={"test": "test"},
+        data=MOCK_CONFIG,
+        options=MOCK_OPTIONS_CONFIG,
     )
     entry.add_to_hass(hass)
     return entry

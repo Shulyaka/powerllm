@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "name": "[%key:common::config_flow::data::name%]"
+        }
+      },
+      "init": {
+        "data": {
+          "prompt_entities": "Include exposed entities into api prompt"
+        },
+        "data_description": {
+          "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "prompt_entities": "Include exposed entities into api prompt"
+        },
+        "data_description": {
+          "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates"
+        }
+      }
+    }
+  }
+}

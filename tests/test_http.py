@@ -25,7 +25,10 @@ async def test_http_api_list(
     assert resp.status == 200
     data = await resp.json()
 
-    assert data == [{"name": "Assist", "id": "assist"}]
+    assert data == [
+        {"name": "Assist", "id": "assist"},
+        {"name": "PowerLLM", "id": "powerllm"},
+    ]
 
 
 async def test_http_tool_list(

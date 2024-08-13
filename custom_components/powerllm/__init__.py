@@ -3,36 +3,28 @@
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, llm
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
 from .http import LLMToolsApiView, LLMToolsListView, LLMToolView
+from .llm_tools import (  # noqa: F401
+    PowerLLMAPI,
+    PowerLLMTool as PowerLLMTool,
+    async_register_tool as async_register_tool,
+    llm_tool as llm_tool,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
-class PowerLLMTool(llm.Tool):
-    """Base class for Power LLM Tools."""
-
-    @callback
-    def prompt(self, hass: HomeAssistant, llm_context: llm.LLMContext) -> str | None:
-        """Additional system prompt for this tool."""
-
-    @callback
-    def async_is_applicable(
-        self, hass: HomeAssistant, llm_context: llm.LLMContext
-    ) -> bool:
-        """Check the tool applicability."""
-        return True
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-
+    api = PowerLLMAPI(hass, entry)
+    llm.async_register_api(hass, api)
     return True
 
 
