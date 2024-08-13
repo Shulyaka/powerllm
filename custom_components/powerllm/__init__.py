@@ -7,10 +7,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, llm
 from homeassistant.helpers.typing import ConfigType
 
+from .api import PowerLLMAPI
 from .const import DOMAIN
 from .http import LLMToolsApiView, LLMToolsListView, LLMToolView
 from .llm_tools import (  # noqa: F401
-    PowerLLMAPI,
     PowerLLMTool as PowerLLMTool,
     async_register_tool as async_register_tool,
     llm_tool as llm_tool,

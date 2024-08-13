@@ -6,7 +6,11 @@ import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.core import HomeAssistant
 
-from custom_components.powerllm.const import CONF_PROMPT_ENTITIES, DOMAIN
+from custom_components.powerllm.const import (
+    CONF_PROMPT_ENTITIES,
+    CONF_SCRIPT_EXPOSED_ONLY,
+    DOMAIN,
+)
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS_CONFIG
 
@@ -67,8 +71,10 @@ async def test_options_flow(
         options_flow["flow_id"],
         {
             CONF_PROMPT_ENTITIES: False,
+            CONF_SCRIPT_EXPOSED_ONLY: False,
         },
     )
     await hass.async_block_till_done()
     assert options["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
     assert options["data"][CONF_PROMPT_ENTITIES] is False
+    assert options["data"][CONF_SCRIPT_EXPOSED_ONLY] is False

@@ -17,7 +17,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_PROMPT_ENTITIES, DOMAIN
+from .const import CONF_PROMPT_ENTITIES, CONF_SCRIPT_EXPOSED_ONLY, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,12 +30,9 @@ DATA_SCHEMA = vol.Schema(
 OPTIONS_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
+        vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
     }
 )
-
-DEFAULT_OPTIONS = {
-    CONF_PROMPT_ENTITIES: True,
-}
 
 
 class PowerLLMBaseFlow:
@@ -55,9 +52,10 @@ class PowerLLMBaseFlow:
             self._abort_if_unique_id_configured()
             return await self.async_step_init()  # data is done, advance to options
 
-        return self.async_show_form(
-            step_id="user", data_schema=DATA_SCHEMA, errors=errors
+        schema = self.add_suggested_values_to_schema(
+            DATA_SCHEMA, self.suggested_values_from_default(DATA_SCHEMA)
         )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -103,7 +101,26 @@ class PowerLLMConfigFlow(PowerLLMBaseFlow, ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize config flow."""
         self.data: Mapping[str, Any] = {}
-        self.options: Mapping[str, Any] = DEFAULT_OPTIONS
+        self.options: Mapping[str, Any] = self.suggested_values_from_default(
+            OPTIONS_SCHEMA
+        )
+
+    def suggested_values_from_default(
+        self, data_schema: vol.Schema | Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        """Generate suggested values from schema markers."""
+        if isinstance(data_schema, vol.Schema):
+            data_schema = data_schema.schema
+
+        suggested_values = {}
+        for key, value in data_schema.items():
+            if isinstance(key, vol.Marker):
+                suggested_values[str(key)] = key.default
+            if isinstance(value, (vol.Schema, dict)):
+                value = self.suggested_values_from_default(value)
+                if value:
+                    suggested_values[str(key)] = value
+        return suggested_values
 
     @staticmethod
     @callback
