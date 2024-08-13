@@ -171,6 +171,12 @@ def _format_state(hass: HomeAssistant, entity_state: State) -> dict[str, Any]:
     return result
 
 
+ADDITIONAL_DESCRIPTIONS = {
+    intent.INTENT_GET_STATE: ". Use it to get a list of devices matching certain "
+    "criteria or get additional details. ",
+}
+
+
 class PowerIntentTool(PowerLLMTool):
     """Power LLM Tool representing an Intent."""
 
@@ -185,6 +191,8 @@ class PowerIntentTool(PowerLLMTool):
         self.description = (
             intent_handler.description or f"Execute Home Assistant {self.name} intent"
         )
+        if name in ADDITIONAL_DESCRIPTIONS:
+            self.description += ADDITIONAL_DESCRIPTIONS[name]
         self.extra_slots = None
         if not (slot_schema := intent_handler.slot_schema):
             return

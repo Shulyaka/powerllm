@@ -587,8 +587,6 @@ light.1:
     )
     first_part_prompt = (
         "When controlling Home Assistant always call the intent tools. "
-        "Use HassGetState to get a list of devices matching certain criteria "
-        "or get additional details. "
         "When controlling a device, prefer passing just name and domain. "
         "When controlling an area, prefer passing just area name and domain."
     )
