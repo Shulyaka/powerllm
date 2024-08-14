@@ -10,7 +10,7 @@ This integration provides:
 2. Enhanced and experimental versions of core 'Assist' LLM tools
 3. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
 4. Extra LLM tools:
-   * Web search with Duck Duck Go
+   * Web and news search with Duck Duck Go
 
 TODO:
 

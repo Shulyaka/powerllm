@@ -51,3 +51,31 @@ class DDGTextSearchTool(DDGBaseTool):
             ) or {"error": "No results returned"}
         except DuckDuckGoSearchException as e:
             raise HomeAssistantError(str(e)) from e
+
+
+class DDGNewsTool(DDGBaseTool):
+    """DuckDuckGo news tool."""
+
+    name = "news"
+    description = "Get the latest news from the internet"
+    parameters = vol.Schema(
+        {
+            vol.Required("keywords", description="keywords for query"): cv.string,
+            vol.Optional(
+                "max_results", default=5, description="Number of results requested"
+            ): vol.Coerce(int),
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
+    ) -> JsonObjectType:
+        """Execute news search."""
+        try:
+            return await self._ddg.anews(
+                tool_input.args["keywords"],
+                region=self._region,
+                max_results=tool_input.args["max_results"],
+            ) or {"error": "No results returned"}
+        except DuckDuckGoSearchException as e:
+            raise HomeAssistantError(str(e)) from e
