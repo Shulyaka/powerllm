@@ -16,10 +16,12 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.util import yaml
 
 from .const import (
     CONF_DUCKDUCKGO_REGION,
     CONF_INTENT_ENTITIES,
+    CONF_MEMORY_PROMPTS,
     CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
     DOMAIN,
@@ -120,6 +122,12 @@ OPTIONS_SCHEMA = vol.Schema(
             ),
         ),
         vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
+        vol.Optional(CONF_MEMORY_PROMPTS): selector.TextSelector(
+            selector.TextSelectorConfig(
+                multiline=True,
+                type=selector.TextSelectorType.TEXT,
+            ),
+        ),
     }
 )
 
@@ -153,13 +161,20 @@ class PowerLLMBaseFlow:
         errors = {}
         if user_input is not None:
             self.options = user_input
+            if (prompts := user_input.get(CONF_MEMORY_PROMPTS)) is not None:
+                self.options[CONF_MEMORY_PROMPTS] = yaml.parse_yaml(prompts)
+
             return self.async_create_entry(
                 title=self.data[CONF_NAME], data=self.data, options=self.options
             )
 
+        options = self.options.copy()
+        if (prompts := options.get(CONF_MEMORY_PROMPTS)) is not None:
+            options[CONF_MEMORY_PROMPTS] = yaml.dump(prompts)
+
         schema = self.add_suggested_values_to_schema(
             OPTIONS_SCHEMA,
-            self.options,
+            options,
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
 
@@ -203,7 +218,9 @@ class PowerLLMConfigFlow(PowerLLMBaseFlow, ConfigFlow, domain=DOMAIN):
 
         suggested_values = {}
         for key, value in data_schema.items():
-            if isinstance(key, vol.Marker):
+            if isinstance(key, vol.Marker) and not isinstance(
+                key.default, vol.Undefined
+            ):
                 suggested_values[str(key)] = key.default
             if isinstance(value, (vol.Schema, dict)):
                 value = self.suggested_values_from_default(value)

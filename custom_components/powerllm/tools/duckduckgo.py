@@ -45,9 +45,9 @@ class DDGTextSearchTool(DDGBaseTool):
         """Execute text search."""
         try:
             return await self._ddg.atext(
-                tool_input.args["query"],
+                tool_input.tool_args["query"],
                 region=self._region,
-                max_results=tool_input.args["max_results"],
+                max_results=tool_input.tool_args["max_results"],
             ) or {"error": "No results returned"}
         except DuckDuckGoSearchException as e:
             raise HomeAssistantError(str(e)) from e
@@ -73,9 +73,9 @@ class DDGNewsTool(DDGBaseTool):
         """Execute news search."""
         try:
             return await self._ddg.anews(
-                tool_input.args["keywords"],
+                tool_input.tool_args["keywords"],
                 region=self._region,
-                max_results=tool_input.args["max_results"],
+                max_results=tool_input.tool_args["max_results"],
             ) or {"error": "No results returned"}
         except DuckDuckGoSearchException as e:
             raise HomeAssistantError(str(e)) from e
@@ -120,7 +120,7 @@ class DDGMapsSearchTool(DDGBaseTool):
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
     ) -> JsonObjectType:
         """Execute news search."""
-        kwargs = tool_input.args.copy()
+        kwargs = tool_input.tool_args.copy()
         if all(
             kwargs.get(x) is None
             for x in [

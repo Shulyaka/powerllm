@@ -10,11 +10,14 @@
         "data": {
           "prompt_entities": "Include exposed entities into api prompt",
           "intent_entities": "Include relevant entities into intent tool response",
+          "duckduckgo_region": "DuckDuckGo Region",
+          "memory_prompts": "Facts that the model remembers for each user",
           "script_exposed_only": "Only allow referencing exposed entities"
         },
         "data_description": {
           "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates",
           "intent_entities": "Also enables HassGetState intent for querying additional attributes of entities",
+          "memory_prompts": "This is in yaml format with user id as key and string as value",
           "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
         }
       }
@@ -26,11 +29,14 @@
         "data": {
           "prompt_entities": "Include exposed entities into api prompt",
           "intent_entities": "Include relevant entities into intent tool response",
+          "duckduckgo_region": "DuckDuckGo Region",
+          "memory_prompts": "Facts that the model remembers for each user",
           "script_exposed_only": "Only allow referencing exposed entities"
         },
         "data_description": {
           "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates",
           "intent_entities": "Also enables HassGetState intent for querying additional attributes of entities",
+          "memory_prompts": "This is in yaml format with user id as key and string as value",
           "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
         }
       }

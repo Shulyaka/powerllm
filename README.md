@@ -4,6 +4,9 @@
 
 Home Assistant custom component for LLM empowerment.
 
+Current status: developer's preview. Some functionality is not tested and some requires not-yet-released features of Home Assistant. Integration might require reconfiguration after update.
+
+
 This integration provides:
 
 1. HTTP API for available LLM tools to integrate HA LLM Tools with an externally running LLM
@@ -11,7 +14,8 @@ This integration provides:
 3. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
 4. Extra LLM tools:
    * Web, maps, and news search with Duck Duck Go
+   * Permanent memory tool
 
 TODO:
 
-More LLM tools such as python code execution, memory, etc
+More LLM tools such as python code execution and others

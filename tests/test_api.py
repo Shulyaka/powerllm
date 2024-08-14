@@ -28,7 +28,7 @@ def llm_context() -> llm.LLMContext:
     """Return tool input context."""
     return llm.LLMContext(
         platform="test_platform",
-        context=Context(),
+        context=Context(user_id="12345"),
         user_prompt=None,
         language=None,
         assistant=None,
@@ -57,7 +57,7 @@ async def test_powerllm_api(
         suggested_object_id="kitchen",
     ).write_unavailable_state(hass)
 
-    test_context = Context()
+    test_context = Context(user_id="12345")
     llm_context = llm.LLMContext(
         platform="test_platform",
         context=test_context,
@@ -84,19 +84,19 @@ async def test_powerllm_api(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 7
+    assert len(api.tools) == 8
 
     # Match all
     intent_handler.platforms = None
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 8
+    assert len(api.tools) == 9
 
     # Match specific domain
     intent_handler.platforms = {"light"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 8
+    assert len(api.tools) == 9
     tool = api.tools[3]
     assert tool.name == "test_intent"
     assert tool.description == "Execute Home Assistant test_intent intent"
@@ -308,6 +308,7 @@ async def test_powerllm_api_tools(
         "websearch",
         "news",
         "maps_search",
+        "memory",
     ]
 
 
@@ -324,7 +325,7 @@ async def test_powerllm_api_description(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 9
+    assert len(api.tools) == 10
     tool = api.tools[4]
     assert tool.name == "test_intent"
     assert tool.description == "my intent handler"
