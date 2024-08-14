@@ -47,7 +47,7 @@ class DDGTextSearchTool(DDGBaseTool):
             return await self._ddg.atext(
                 tool_input.tool_args["query"],
                 region=self._region,
-                max_results=tool_input.tool_args["max_results"],
+                max_results=tool_input.tool_args.get("max_results"),
             ) or {"error": "No results returned"}
         except DuckDuckGoSearchException as e:
             raise HomeAssistantError(str(e)) from e
@@ -75,7 +75,7 @@ class DDGNewsTool(DDGBaseTool):
             return await self._ddg.anews(
                 tool_input.tool_args["keywords"],
                 region=self._region,
-                max_results=tool_input.tool_args["max_results"],
+                max_results=tool_input.tool_args.get("max_results"),
             ) or {"error": "No results returned"}
         except DuckDuckGoSearchException as e:
             raise HomeAssistantError(str(e)) from e

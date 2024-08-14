@@ -4,9 +4,6 @@
 
 Home Assistant custom component for LLM empowerment.
 
-Current status: developer's preview. Some functionality is not tested and some requires not-yet-released features of Home Assistant. Integration might require reconfiguration after update.
-
-
 This integration provides:
 
 1. HTTP API for available LLM tools to integrate HA LLM Tools with an externally running LLM
