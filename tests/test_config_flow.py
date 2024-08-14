@@ -7,6 +7,7 @@ from homeassistant import config_entries, data_entry_flow
 from homeassistant.core import HomeAssistant
 
 from custom_components.powerllm.const import (
+    CONF_DUCKDUCKGO_REGION,
     CONF_INTENT_ENTITIES,
     CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
@@ -73,6 +74,7 @@ async def test_options_flow(
         {
             CONF_PROMPT_ENTITIES: False,
             CONF_INTENT_ENTITIES: False,
+            CONF_DUCKDUCKGO_REGION: "us-en",
             CONF_SCRIPT_EXPOSED_ONLY: False,
         },
     )
@@ -80,4 +82,5 @@ async def test_options_flow(
     assert options["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
     assert options["data"][CONF_PROMPT_ENTITIES] is False
     assert options["data"][CONF_INTENT_ENTITIES] is False
+    assert options["data"][CONF_DUCKDUCKGO_REGION] == "us-en"
     assert options["data"][CONF_SCRIPT_EXPOSED_ONLY] is False

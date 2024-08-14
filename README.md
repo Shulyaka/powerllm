@@ -9,7 +9,9 @@ This integration provides:
 1. HTTP API for available LLM tools to integrate HA LLM Tools with an externally running LLM
 2. Enhanced and experimental versions of core 'Assist' LLM tools
 3. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
+4. Extra LLM tools:
+   * Web search with Duck Duck Go
 
 TODO:
 
-1. Extra LLM tools such as websearch, python code execution, memory, etc
+More LLM tools such as python code execution, memory, etc

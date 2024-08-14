@@ -10,6 +10,7 @@
         "data": {
           "prompt_entities": "Include exposed entities into api prompt",
           "intent_entities": "Include relevant entities into intent tool response",
+          "duckduckgo_region": "DuckDuckGo Region",
           "script_exposed_only": "Only allow referencing exposed entities"
         },
         "data_description": {
@@ -26,6 +27,7 @@
         "data": {
           "prompt_entities": "Include exposed entities into api prompt",
           "intent_entities": "Include relevant entities into intent tool response",
+          "duckduckgo_region": "DuckDuckGo Region",
           "script_exposed_only": "Only allow referencing exposed entities"
         },
         "data_description": {

@@ -169,7 +169,7 @@ async def test_function_tool(
         return {"result": "test_response"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    tool = list(api.tools)[5]
+    tool = list(api.tools)[-1]
     assert tool.name == "test_function"
     assert tool.description == "Test tool description."
 
@@ -231,7 +231,7 @@ async def test_async_function_tool(
         return {"result": "test_response"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    tool = list(api.tools)[5]
+    tool = list(api.tools)[-1]
     assert tool.name == "test_async_function"
     assert tool.description == "Test tool description."
 

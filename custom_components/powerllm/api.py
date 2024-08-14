@@ -25,12 +25,14 @@ from homeassistant.helpers import (
 from homeassistant.util import yaml
 
 from .const import (
+    CONF_DUCKDUCKGO_REGION,
     CONF_INTENT_ENTITIES,
     CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
     DOMAIN,
 )
 from .llm_tools import PowerIntentTool, PowerLLMTool, PowerScriptTool
+from .tools.duckduckgo import DDGTextSearchTool
 from .tools.script import DynamicScriptTool
 
 _LOGGER = logging.getLogger(__name__)
@@ -230,6 +232,10 @@ class PowerLLMAPI(llm.API):
 
         tools.append(
             DynamicScriptTool(self.config_entry.options[CONF_SCRIPT_EXPOSED_ONLY])
+        )
+
+        tools.append(
+            DDGTextSearchTool(self.config_entry.options[CONF_DUCKDUCKGO_REGION])
         )
 
         tools.extend(self.hass.data.get(DOMAIN, {}).values())
