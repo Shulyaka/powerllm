@@ -32,7 +32,7 @@ from .const import (
     DOMAIN,
 )
 from .llm_tools import PowerIntentTool, PowerLLMTool, PowerScriptTool
-from .tools.duckduckgo import DDGNewsTool, DDGTextSearchTool
+from .tools.duckduckgo import DDGMapsSearchTool, DDGNewsTool, DDGTextSearchTool
 from .tools.script import DynamicScriptTool
 
 _LOGGER = logging.getLogger(__name__)
@@ -237,8 +237,8 @@ class PowerLLMAPI(llm.API):
         tools.append(
             DDGTextSearchTool(self.config_entry.options[CONF_DUCKDUCKGO_REGION])
         )
-
         tools.append(DDGNewsTool(self.config_entry.options[CONF_DUCKDUCKGO_REGION]))
+        tools.append(DDGMapsSearchTool())
 
         tools.extend(self.hass.data.get(DOMAIN, {}).values())
 
