@@ -84,19 +84,19 @@ async def test_powerllm_api(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 8
+    assert len(api.tools) == 9
 
     # Match all
     intent_handler.platforms = None
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 9
+    assert len(api.tools) == 10
 
     # Match specific domain
     intent_handler.platforms = {"light"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 9
+    assert len(api.tools) == 10
     tool = api.tools[3]
     assert tool.name == "test_intent"
     assert tool.description == "Execute Home Assistant test_intent intent"
@@ -309,6 +309,7 @@ async def test_powerllm_api_tools(
         "news",
         "maps_search",
         "memory",
+        "python_code_execute",
     ]
 
 
@@ -325,7 +326,7 @@ async def test_powerllm_api_description(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 10
+    assert len(api.tools) == 11
     tool = api.tools[4]
     assert tool.name == "test_intent"
     assert tool.description == "my intent handler"

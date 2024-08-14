@@ -19,3 +19,4 @@ mutagen
 ha-ffmpeg
 pymicro-vad
 duckduckgo-search
+RestrictedPython

@@ -15,7 +15,4 @@ This integration provides:
 4. Extra LLM tools:
    * Web, maps, and news search with Duck Duck Go
    * Permanent memory tool
-
-TODO:
-
-More LLM tools such as python code execution and others
+   * Python code execution

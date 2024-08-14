@@ -11,7 +11,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.llm import LLMContext, ToolInput
 from homeassistant.helpers.script import Script
 from homeassistant.util.json import JsonObjectType
-from homeassistant.util.yaml.loader import parse_yaml
+from homeassistant.util.yaml import parse_yaml
 
 from ..const import DOMAIN
 from ..llm_tools import PowerLLMTool
