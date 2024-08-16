@@ -12,7 +12,7 @@
           "intent_entities": "Include relevant entities into intent tool response",
           "duckduckgo_region": "DuckDuckGo Region",
           "memory_prompts": "Facts that the model remembers for each user",
-          "script_exposed_only": "Only allow referencing exposed entities"
+          "script_exposed_only": "Only allow referencing exposed entities in scripts"
         },
         "data_description": {
           "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates",
@@ -31,7 +31,7 @@
           "intent_entities": "Include relevant entities into intent tool response",
           "duckduckgo_region": "DuckDuckGo Region",
           "memory_prompts": "Facts that the model remembers for each user",
-          "script_exposed_only": "Only allow referencing exposed entities"
+          "script_exposed_only": "Only allow referencing exposed entities in scripts"
         },
         "data_description": {
           "prompt_entities": "If disabled, LLM can still guess device name or query it using HssGetStates",
