@@ -221,7 +221,7 @@ class PowerLLMConfigFlow(PowerLLMBaseFlow, ConfigFlow, domain=DOMAIN):
             if isinstance(key, vol.Marker) and not isinstance(
                 key.default, vol.Undefined
             ):
-                suggested_values[str(key)] = key.default
+                suggested_values[str(key)] = key.default()
             if isinstance(value, (vol.Schema, dict)):
                 value = self.suggested_values_from_default(value)
                 if value:
