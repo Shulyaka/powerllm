@@ -173,7 +173,7 @@ def _format_state(hass: HomeAssistant, entity_state: State) -> dict[str, Any]:
 
 ADDITIONAL_DESCRIPTIONS = {
     intent.INTENT_GET_STATE: ". Use it to get a list of devices matching certain "
-    "criteria or get additional details. ",
+    "criteria or get additional details and attributes on them. ",
 }
 
 
