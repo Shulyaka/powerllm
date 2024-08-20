@@ -48,15 +48,15 @@ There are following configuration options available:
 
 This is an extension of [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/) providing LLM-specific endpoints, such as:
 
-* GET /api/powerllm
+* GET `/api/powerllm`
 
   Returns the list available LLM API, such as 'Assist', 'Power LLM', etc
 
-* GET /api/powerllm/<api>
+* GET `/api/powerllm/<api>`
 
   Returns the prompt and the list of tools for a specific api. Optional parameters: `user_input`, `language`, `device_id`
 
-* POST /api/powerllm/<api>/<tool_name>
+* POST `/api/powerllm/<api>/<tool_name>`
 
   Calls the tool and returns the result. Optional parameters: `user_input`, `language`, `device_id`, `tool_args`
 
