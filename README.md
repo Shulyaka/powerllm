@@ -7,8 +7,8 @@ Home Assistant custom component for LLM empowerment.
 This integration provides:
 
 1. HTTP API for available LLM tools to integrate HA LLM Tools with an externally running LLM
-2. Enhanced and experimental versions of core 'Assist' LLM tools
-3. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
+2. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
+3. Enhanced and experimental versions of core 'Assist' LLM tools
 4. Extra LLM tools:
    * Web, maps, and news search with Duck Duck Go
    * Permanent memory tool
@@ -36,7 +36,7 @@ There are following configuration options available:
   Please keep in mind that the state returned returned using this option contains more information and attributes, than the list in the prompt. So if you want your LLM to be able to answer questions like `how long have the lights been on?`, keep it enabled.
 
 * ### DuckDuckGo Region
-  The server location used for web search and maps search. You can safely leave it as `No Region`.
+  The server location used for web and news search. You can safely leave it as `No Region`.
 
 * ### Only allow referencing exposed entities in scripts
   Power LLM includes a tool that allows LLM to write scripts in Home Assistant format and instantly execute them to handle more complex tasks than covered by standard intents. If this option is enabled, Power LLM will make an effort to verify that all entities referenced in this script are exposed. This process however has certain limitations (for example if the entity id is evaluated from template at runtime), so the script might fail this check more often than wanted.
