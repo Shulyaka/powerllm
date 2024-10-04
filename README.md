@@ -69,3 +69,10 @@ There are two options:
 * Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example
 
 * Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent 'pytest-style'. All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example.
+
+## TODO
+
+* Selectively Enable/Disable any tool
+* Weather forecast intent
+* Ability to talk to other conversation agents (i.e. "Ask expert" for a reasoning model, or NLP conversation (Assist) for device control fallback)
+* Your suggestions!

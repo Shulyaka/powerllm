@@ -40,18 +40,29 @@ class LLMToolsListView(HomeAssistantView):
     url = f"/api/{DOMAIN}/" + "{api}"
     name = f"api:{DOMAIN}:api"
 
-    @callback
-    async def get(self, request: web.Request, api: str) -> web.Response:
+    @RequestDataValidator(
+        vol.Schema(
+            {
+                vol.Optional("user_input"): cv.string,
+                vol.Optional("language"): cv.string,
+                vol.Optional("device_id"): cv.string,
+            }
+        ),
+        allow_empty=True,
+    )
+    async def get(
+        self, request: web.Request, data: dict[str, Any], api: str
+    ) -> web.Response:
         """Get LLM Tools list."""
         hass = request.app[KEY_HASS]
 
         llm_context = llm.LLMContext(
             platform=DOMAIN,
             context=self.context(request),
-            user_prompt=None,
-            language=hass.config.language,
+            user_prompt=data.get("user_input"),
+            language=data.get("language", hass.config.language),
             assistant=CONVERSATION_DOMAIN,
-            device_id=None,
+            device_id=data.get("device_id"),
         )
 
         try:
@@ -67,62 +78,6 @@ class LLMToolsListView(HomeAssistantView):
                 else HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 
-    @RequestDataValidator(
-        vol.Schema(
-            {
-                vol.Required("tool_name"): cv.string,
-                vol.Optional("tool_args", default={}): {cv.string: object},
-                vol.Optional("user_input"): cv.string,
-                vol.Optional("language"): cv.string,
-                vol.Optional("device_id"): cv.string,
-            }
-        )
-    )
-    async def post(
-        self, request: web.Request, data: dict[str, Any], api: str
-    ) -> web.Response:
-        """Call an LLM Tool."""
-        hass = request.app[KEY_HASS]
-
-        llm_context = llm.LLMContext(
-            platform=DOMAIN,
-            context=self.context(request),
-            user_prompt=data.get("user_input"),
-            language=data.get("language", hass.config.language),
-            assistant=CONVERSATION_DOMAIN,
-            device_id=data.get("device_id"),
-        )
-
-        tool_input = llm.ToolInput(
-            tool_name=data["tool_name"],
-            tool_args=data["tool_args"],
-        )
-
-        try:
-            llm_api = await llm.async_get_api(hass, api, llm_context)
-            _LOGGER.info(
-                "Tool call: %s::%s(%s)",
-                api,
-                tool_input.tool_name,
-                tool_input.tool_args,
-            )
-            tool_response = await llm_api.async_call_tool(tool_input)
-        except (HomeAssistantError, vol.Invalid) as e:
-            tool_response = {"error": type(e).__name__}
-            if str(e):
-                tool_response["error_text"] = str(e)
-            _LOGGER.info("Tool response: %s", tool_response)
-            return self.json(
-                tool_response,
-                HTTPStatus.NOT_FOUND
-                if str(e).endswith(" not found")
-                else HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        _LOGGER.info("Tool response: %s", tool_response)
-
-        return self.json(tool_response)
-
 
 class LLMToolView(HomeAssistantView):
     """View to get LLM Tool."""
@@ -130,37 +85,17 @@ class LLMToolView(HomeAssistantView):
     url = f"/api/{DOMAIN}/" + "{api}/{tool_name}"
     name = f"api:{DOMAIN}:api:tool"
 
-    @callback
-    async def get(self, request: web.Request, api: str, tool_name: str) -> web.Response:
-        """Get LLM Tool specs."""
-        hass = request.app[KEY_HASS]
-
-        llm_context = llm.LLMContext(
-            platform=DOMAIN,
-            context=self.context(request),
-            user_prompt=None,
-            language=hass.config.language,
-            assistant=CONVERSATION_DOMAIN,
-            device_id=None,
-        )
-
-        try:
-            llm_api = await llm.async_get_api(hass, api, llm_context)
-            for tool in async_llm_tools_json(llm_api):
-                if tool["name"] == tool_name:
-                    break
-            else:
-                raise HomeAssistantError("Tool not found")
-            return self.json(tool)
-        except HomeAssistantError as e:
-            return self.json_message(
-                str(e),
-                HTTPStatus.NOT_FOUND
-                if str(e).endswith(" not found")
-                else HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-    @RequestDataValidator(vol.Schema({cv.string: object}), allow_empty=True)
+    @RequestDataValidator(
+        vol.Schema(
+            {
+                vol.Optional("tool_args", default={}): {cv.string: object},
+                vol.Optional("user_input"): cv.string,
+                vol.Optional("language"): cv.string,
+                vol.Optional("device_id"): cv.string,
+            }
+        ),
+        allow_empty=True,
+    )
     async def post(
         self,
         request: web.Request,
@@ -174,15 +109,15 @@ class LLMToolView(HomeAssistantView):
         llm_context = llm.LLMContext(
             platform=DOMAIN,
             context=self.context(request),
-            user_prompt=None,
-            language=hass.config.language,
+            user_prompt=data.get("user_input"),
+            language=data.get("language", hass.config.language),
             assistant=CONVERSATION_DOMAIN,
-            device_id=None,
+            device_id=data.get("device_id"),
         )
 
         tool_input = llm.ToolInput(
             tool_name=tool_name,
-            tool_args=data or {},
+            tool_args=data["tool_args"],
         )
 
         try:

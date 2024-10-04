@@ -14,6 +14,7 @@ pytest-tornasync
 pytest-homeassistant-custom-component
 home_assistant_intents
 service_identity
+pyspeex_noise
 hassil
 mutagen
 ha-ffmpeg

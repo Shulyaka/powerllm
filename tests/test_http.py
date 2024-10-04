@@ -78,47 +78,6 @@ async def test_http_tool_list(
     resp = await client.get("/api/powerllm/non-existent")
     assert resp.status == 404
 
-    resp = await client.post(
-        "/api/powerllm/assist",
-        json={"tool_name": "OrderBeer", "tool_args": {"type": "Belgian"}},
-    )
-
-    assert resp.status == 200
-    data = await resp.json()
-
-    assert data == {
-        "data": {
-            "failed": [],
-            "success": [],
-            "targets": [],
-        },
-        "response_type": "action_done",
-        "speech": {
-            "plain": {
-                "extra_data": None,
-                "speech": "I've ordered a Belgian!",
-            },
-        },
-    }
-
-    resp = await client.post(
-        "/api/powerllm/non-existent", json={"tool_name": "OrderBeer"}
-    )
-    assert resp.status == 404
-
-    resp = await client.post("/api/powerllm/assist", json={"tool_name": "OrderBeer"})
-    assert resp.status == 500
-    data = await resp.json()
-
-    # assert data == {
-    #    "error": "MultipleInvalid",
-    #    "error_text": "required key not provided @ data['type']",
-    # }
-    assert data == {
-        "error": "IntentUnexpectedError",
-        "error_text": "Error handling OrderBeer",
-    }
-
 
 async def test_http_tool(
     hass: HomeAssistant,
@@ -154,32 +113,15 @@ async def test_http_tool(
     intent.async_register(hass, TestIntentHandler())
 
     client = await hass_client()
-    resp = await client.get("/api/powerllm/assist/OrderBeer")
-
-    assert resp.status == 200
-    data = await resp.json()
-
-    assert data == {
-        "description": "Orders beer",
-        "name": "OrderBeer",
-        "parameters": {
-            "properties": {
-                "type": {
-                    "type": "string",
-                },
-            },
-            "required": ["type"],
-            "type": "object",
+    resp = await client.post(
+        "/api/powerllm/assist/OrderBeer",
+        json={
+            "user_input": "I wish beer",
+            "language": "en",
+            "device_id": "12345",
+            "tool_args": {"type": "Lager"},
         },
-    }
-
-    resp = await client.get("/api/powerllm/non-existent/non-existent")
-    assert resp.status == 404
-
-    resp = await client.get("/api/powerllm/assist/non-existent")
-    assert resp.status == 404
-
-    resp = await client.post("/api/powerllm/assist/OrderBeer", json={"type": "Lager"})
+    )
 
     assert resp.status == 200
     data = await resp.json()
@@ -210,11 +152,7 @@ async def test_http_tool(
     assert resp.status == 500
     data = await resp.json()
 
-    # assert data == {
-    #    "error": "MultipleInvalid",
-    #    "error_text": "required key not provided @ data['type']",
-    # }
     assert data == {
-        "error": "IntentUnexpectedError",
-        "error_text": "Error handling OrderBeer",
+        "error": "MultipleInvalid",
+        "error_text": "required key not provided @ data['type']",
     }
