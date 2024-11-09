@@ -1,7 +1,6 @@
 {
   "domain": "powerllm",
   "name": "Power LLM",
-  "after_dependencies": ["python_script"],
   "codeowners": ["@Shulyaka"],
   "config_flow": true,
   "dependencies": ["assist_pipeline", "http", "intent", "script"],
