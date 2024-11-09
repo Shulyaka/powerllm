@@ -74,5 +74,6 @@ There are two options:
 
 * Selectively Enable/Disable any tool
 * Weather forecast intent
+* Web scrapping using trafilatura
 * Ability to talk to other conversation agents (i.e. "Ask expert" for a reasoning model, or NLP conversation (Assist) for device control fallback)
 * Your suggestions!

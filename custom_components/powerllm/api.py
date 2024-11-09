@@ -50,6 +50,7 @@ class PowerLLMAPI(llm.API):
         intent.INTENT_TOGGLE,
         intent.INTENT_GET_CURRENT_DATE,
         intent.INTENT_GET_CURRENT_TIME,
+        intent.INTENT_RESPOND,
     }
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:

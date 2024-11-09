@@ -54,12 +54,11 @@ async def test_http_tool_list(
         async def async_handle(self, intent):
             """Handle the intent."""
             assert intent.context.user_id == hass_admin_user.id
+            slots = self.async_validate_slots(intent.slots)
             response = intent.create_response()
-            response.async_set_speech(
-                f"I've ordered a {intent.slots['type']['value']}!"
-            )
+            response.async_set_speech(f"I've ordered a {slots['type']['value']}!")
             response.async_set_card(
-                "Beer ordered", f"You chose a {intent.slots['type']['value']}."
+                "Beer ordered", f"You chose a {slots['type']['value']}."
             )
             return response
 
@@ -101,12 +100,11 @@ async def test_http_tool(
         async def async_handle(self, intent):
             """Handle the intent."""
             assert intent.context.user_id == hass_admin_user.id
+            slots = self.async_validate_slots(intent.slots)
             response = intent.create_response()
-            response.async_set_speech(
-                f"I've ordered a {intent.slots['type']['value']}!"
-            )
+            response.async_set_speech(f"I've ordered a {slots['type']['value']}!")
             response.async_set_card(
-                "Beer ordered", f"You chose a {intent.slots['type']['value']}."
+                "Beer ordered", f"You chose a {slots['type']['value']}."
             )
             return response
 
@@ -153,6 +151,6 @@ async def test_http_tool(
     data = await resp.json()
 
     assert data == {
-        "error": "MultipleInvalid",
-        "error_text": "required key not provided @ data['type']",
+        "error": "InvalidSlotInfo",
+        "error_text": "Received invalid slot info for OrderBeer",
     }
