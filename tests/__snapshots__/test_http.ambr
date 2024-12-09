@@ -106,6 +106,20 @@
         }),
       }),
       dict({
+        'description': 'Cancels all timers',
+        'name': 'HassCancelAllTimers',
+        'parameters': dict({
+          'properties': dict({
+            'area': dict({
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+          ]),
+          'type': 'object',
+        }),
+      }),
+      dict({
         'description': 'Orders beer',
         'name': 'OrderBeer',
         'parameters': dict({

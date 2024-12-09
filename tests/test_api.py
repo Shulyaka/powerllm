@@ -84,20 +84,20 @@ async def test_powerllm_api(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 9
+    assert len(api.tools) == 10
 
     # Match all
     intent_handler.platforms = None
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 10
+    assert len(api.tools) == 11
 
     # Match specific domain
     intent_handler.platforms = {"light"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 10
-    tool = api.tools[3]
+    assert len(api.tools) == 11
+    tool = api.tools[4]
     assert tool.name == "test_intent"
     assert tool.description == "Execute Home Assistant test_intent intent"
     assert tool.parameters == vol.Schema(
@@ -298,6 +298,7 @@ async def test_powerllm_api_tools(
         "HassSetPosition",
         "HassStartTimer",
         "HassCancelTimer",
+        "HassCancelAllTimers",
         "HassIncreaseTimer",
         "HassDecreaseTimer",
         "HassPauseTimer",
@@ -326,8 +327,8 @@ async def test_powerllm_api_description(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 11
-    tool = api.tools[4]
+    assert len(api.tools) == 12
+    tool = api.tools[5]
     assert tool.name == "test_intent"
     assert tool.description == "my intent handler"
 
