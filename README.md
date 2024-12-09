@@ -9,7 +9,8 @@ This integration provides:
 1. HTTP API for available LLM tools to integrate HA LLM Tools with an externally running LLM
 2. Framework to easily add new LLM tools from other custom integrations, making Home Assistant a platform for LLM tools experimentation.
 3. Enhanced and experimental versions of core 'Assist' LLM tools
-4. Extra LLM tools:
+4. Selectively Enable/Disable any tool
+5. Extra LLM tools:
    * Web, maps, and news search with Duck Duck Go
    * Permanent memory tool
    * Python code execution
@@ -42,7 +43,7 @@ There are following configuration options available:
   Power LLM includes a tool that allows LLM to write scripts in Home Assistant format and instantly execute them to handle more complex tasks than covered by standard intents. If this option is enabled, Power LLM will make an effort to verify that all entities referenced in this script are exposed. This process however has certain limitations (for example if the entity id is evaluated from template at runtime), so the script might fail this check more often than wanted.
 
 * ### Facts that the model remembers for each user
-  This field should be in a yaml map format, with user_id as the key and string as the value. The string contains the facts that the LLM chose to remember about the user. The best way to add things here is to ask LLM to remember something about you. This option is presented here in case you want to delete something.
+  These field contain the facts that the LLM chose to remember about the user for each `user_id`. You can also ask LLM to remember something about you. This option is presented here in case you want to delete something.
 
 ## HTTP API
 
@@ -72,7 +73,6 @@ There are two options:
 
 ## TODO
 
-* Selectively Enable/Disable any tool
 * Weather forecast intent
 * Web scrapping using trafilatura
 * Ability to talk to other conversation agents (i.e. "Ask expert" for a reasoning model, or NLP conversation (Assist) for device control fallback)

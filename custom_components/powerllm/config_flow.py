@@ -14,16 +14,18 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
-from homeassistant.const import CONF_NAME
-from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.const import CONF_DEFAULT, CONF_NAME
+from homeassistant.core import Context, callback
+from homeassistant.helpers import config_validation as cv, llm, selector
 
+from .api import PowerLLMAPI
 from .const import (
     CONF_DUCKDUCKGO_REGION,
     CONF_INTENT_ENTITIES,
     CONF_MEMORY_PROMPTS,
     CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
+    CONF_TOOL_SELECTION,
     DOMAIN,
 )
 
@@ -130,6 +132,36 @@ class PowerLLMBaseFlow:
 
     async def get_options_schema(self) -> vol.Schema:
         """Get data schema."""
+        tmp_entry = ConfigEntry(
+            discovery_keys={},
+            domain=DOMAIN,
+            minor_version=0,
+            source="",
+            title="Temp",
+            unique_id=None,
+            version=0,
+            data={CONF_NAME: "Temp"},
+            options={
+                CONF_PROMPT_ENTITIES: False,
+                CONF_INTENT_ENTITIES: True,
+                CONF_DUCKDUCKGO_REGION: "wt-wt",
+                CONF_SCRIPT_EXPOSED_ONLY: False,
+            },
+        )
+        tmp_context = llm.LLMContext(
+            platform=DOMAIN,
+            context=Context(user_id="Temp"),
+            user_prompt=None,
+            language=None,
+            assistant=None,
+            device_id=None,
+        )
+        tmp_api = await PowerLLMAPI(self.hass, tmp_entry).async_get_api_instance(
+            tmp_context
+        )
+        tools = [tool.name for tool in tmp_api.tools]
+        tools.append(CONF_DEFAULT)
+
         return vol.Schema(
             {
                 vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
@@ -159,6 +191,9 @@ class PowerLLMBaseFlow:
                         for user in await self.hass.auth.async_get_users()
                         if not user.system_generated
                     }
+                ),
+                vol.Optional(CONF_TOOL_SELECTION): vol.Schema(
+                    {vol.Required(tool, default=True): bool for tool in tools}
                 ),
             }
         )

@@ -40,7 +40,9 @@ class MemoryTool(PowerLLMTool):
     @callback
     def async_is_applicable(self, hass: HomeAssistant, llm_context: LLMContext) -> bool:
         """Check the tool applicability."""
-        return llm_context.context.user_id is not None
+        return (
+            llm_context.context is not None and llm_context.context.user_id is not None
+        )
 
     @callback
     def prompt(self, hass: HomeAssistant, llm_context: LLMContext) -> str | None:

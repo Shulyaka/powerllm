@@ -13,7 +13,7 @@ from homeassistant.components.lock import DOMAIN as LOCK_DOMAIN
 from homeassistant.components.script import DOMAIN as SCRIPT_DOMAIN
 from homeassistant.components.weather.intent import INTENT_GET_WEATHER
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_DEFAULT, CONF_NAME
 from homeassistant.core import HomeAssistant, callback, split_entity_id
 from homeassistant.helpers import (
     area_registry as ar,
@@ -29,6 +29,7 @@ from .const import (
     CONF_INTENT_ENTITIES,
     CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
+    CONF_TOOL_SELECTION,
     DOMAIN,
 )
 from .llm_tools import PowerIntentTool, PowerLLMTool, PowerScriptTool
@@ -193,7 +194,7 @@ class PowerLLMAPI(llm.API):
             }
 
         if not self.config_entry.options[CONF_INTENT_ENTITIES]:
-            ignore_intents.append(intent.INTENT_GET_STATE)
+            ignore_intents = ignore_intents | {intent.INTENT_GET_STATE}
 
         intent_handlers = [
             intent_handler
@@ -245,6 +246,11 @@ class PowerLLMAPI(llm.API):
 
         tools.extend(self.hass.data.get(DOMAIN, {}).values())
 
+        tool_selection = self.config_entry.options.get(CONF_TOOL_SELECTION, {})
+        tool_selection_default = tool_selection.get(CONF_DEFAULT, True)
         return [
-            tool for tool in tools if tool.async_is_applicable(self.hass, llm_context)
+            tool
+            for tool in tools
+            if tool.async_is_applicable(self.hass, llm_context)
+            and tool_selection.get(tool.name, tool_selection_default)
         ]
