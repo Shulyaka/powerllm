@@ -148,11 +148,17 @@ class PowerLLMBaseFlow:
                     ),
                 ),
                 vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
-                vol.Optional(CONF_MEMORY_PROMPTS): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    ),
+                vol.Optional(CONF_MEMORY_PROMPTS): vol.Schema(
+                    {
+                        user.id: selector.TextSelector(
+                            selector.TextSelectorConfig(
+                                multiline=True,
+                                type=selector.TextSelectorType.TEXT,
+                            ),
+                        )
+                        for user in await self.hass.auth.async_get_users()
+                        if not user.system_generated
+                    }
                 ),
             }
         )
@@ -188,7 +194,7 @@ class RecursiveDataFlow(PowerLLMBaseFlow):
 
             yield name, vol.Schema(current_schema), data
             for var, val in recursive_schema.items():
-                yield traverse_config(str(var), val, data.setdefault(var, {}))
+                yield from traverse_config(str(var), val, data.setdefault(var, {}))
 
         if not isinstance(self, OptionsFlow):
             yield from traverse_config("user", self.data_schema, self.data)

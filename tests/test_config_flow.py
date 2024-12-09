@@ -49,8 +49,19 @@ async def test_config_flow(hass: HomeAssistant):
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "init"
 
+    # Advance to step 3
+    user_input = MOCK_OPTIONS_CONFIG.copy()
+    user_input.pop("memory_prompts", None)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_OPTIONS_CONFIG
+        result["flow_id"], user_input=user_input
+    )
+
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "memory_prompts"
+
+    # Final result
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input=MOCK_OPTIONS_CONFIG.get(result["step_id"], {})
     )
 
     # Check that the config flow is complete and a new entry is created with
@@ -66,11 +77,12 @@ async def test_options_flow(
     hass: HomeAssistant, mock_config_entry, mock_init_component
 ) -> None:
     """Test a successful options flow."""
-    options_flow = await hass.config_entries.options.async_init(
-        mock_config_entry.entry_id
-    )
+    options = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert options["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert options["step_id"] == "init"
+
     options = await hass.config_entries.options.async_configure(
-        options_flow["flow_id"],
+        options["flow_id"],
         {
             CONF_PROMPT_ENTITIES: False,
             CONF_INTENT_ENTITIES: False,
@@ -78,7 +90,14 @@ async def test_options_flow(
             CONF_SCRIPT_EXPOSED_ONLY: False,
         },
     )
-    await hass.async_block_till_done()
+    assert options["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert options["step_id"] == "memory_prompts"
+
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"],
+        {},
+    )
+    # await hass.async_block_till_done()
     assert options["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
     assert options["data"][CONF_PROMPT_ENTITIES] is False
     assert options["data"][CONF_INTENT_ENTITIES] is False
