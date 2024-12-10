@@ -62,3 +62,27 @@ output["test"] = math.cos(0)
     response = await api.async_call_tool(tool_input)
 
     assert response == {"output": {"test": 1.0}}
+
+
+async def test_python_script_tool_print(
+    hass: HomeAssistant, llm_context: llm.LLMContext, mock_init_component
+) -> None:
+    """Test print in python script tool."""
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    source = """
+print("test1")
+def test2():
+    print("test2")
+
+test2()
+    """
+
+    tool_input = llm.ToolInput(
+        tool_name="python_code_execute",
+        tool_args={"source": source},
+    )
+
+    response = await api.async_call_tool(tool_input)
+
+    assert response == {"printed": "test1\ntest2\n"}
