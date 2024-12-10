@@ -13,9 +13,9 @@ from .http import LLMToolsApiView, LLMToolsListView, LLMToolView
 from .llm_tools import (  # noqa: F401
     PowerLLMTool as PowerLLMTool,
     async_register_tool as async_register_tool,
+    deferred_register_tools,
     llm_tool as llm_tool,
 )
-from .tools.python_code import async_setup_tool as async_setup_python_code
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +34,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.http.register_view(LLMToolsApiView)
     hass.http.register_view(LLMToolsListView)
     hass.http.register_view(LLMToolView)
-    async_setup_python_code(hass)
+    deferred_register_tools(hass)
 
     return True

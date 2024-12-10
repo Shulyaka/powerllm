@@ -392,11 +392,34 @@ def async_register_tool(hass: HomeAssistant, tool: PowerLLMTool | Callable) -> N
     tools[tool.name] = tool
 
 
-def llm_tool(hass: HomeAssistant) -> Callable:
+HASS_LIST = []
+LLM_TOOL_LIST = []
+
+
+def llm_tool(arg: HomeAssistant | Callable) -> Callable:
     """Register a function as an LLM Tool with decorator."""
 
-    def _llm_tool(func: Callable) -> Callable:
-        async_register_tool(hass, func)
-        return func
+    if isinstance(arg, HomeAssistant):
+        hass = arg
 
-    return _llm_tool
+        def _llm_tool(func: Callable) -> Callable:
+            async_register_tool(hass, func)
+            return func
+
+        return _llm_tool
+
+    func = arg
+    LLM_TOOL_LIST.append(func)
+    for hass in HASS_LIST:
+        async_register_tool(hass, func)
+    return func
+
+
+def deferred_register_tools(hass: HomeAssistant) -> None:
+    """Register tools declared with the decorator."""
+    if hass in HASS_LIST:
+        return
+
+    HASS_LIST.append(hass)
+    for func in LLM_TOOL_LIST:
+        async_register_tool(hass, func)

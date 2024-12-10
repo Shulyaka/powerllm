@@ -38,36 +38,33 @@ class MyHandler(logging.Handler):
         self.logs.append(record)
 
 
-def async_setup_tool(hass: HomeAssistant):
-    """Add the tool."""
+@llm_tool
+def python_code_execute(hass: HomeAssistant, source: str, data: dict | None = None):
+    """Execute python code in a restricted environment.
 
-    @llm_tool(hass)
-    def python_code_execute(hass: HomeAssistant, source: str, data: dict | None = None):
-        """Execute python code in a restricted environment.
+    Use this tool for math calculations among other things.
+    Use `output` dictionary for output and `logger` object for logging.
+    """
+    log_handler = MyHandler()
+    logger = logging.getLogger("homeassistant.components.python_script.source")
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(log_handler)
+    try:
+        output = execute(hass, "source", source, data, return_response=True)
+    except HomeAssistantError as e:
+        output = {"error": type(e).__name__}
+        if str(e):
+            output["error_text"] = str(e)
+    logger.removeHandler(log_handler)
 
-        Use this tool for math calculations among other things.
-        Use `output` dictionary for output and `logger` object for logging.
-        """
-        log_handler = MyHandler()
-        logger = logging.getLogger("homeassistant.components.python_script.source")
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(log_handler)
-        try:
-            output = execute(hass, "source", source, data, return_response=True)
-        except HomeAssistantError as e:
-            output = {"error": type(e).__name__}
-            if str(e):
-                output["error_text"] = str(e)
-        logger.removeHandler(log_handler)
-
-        result = {"output": output}
-        logs = [
-            {"level": record.levelno, "msg": record.getMessage()}
-            for record in log_handler.logs
-        ]
-        if logs:
-            result["logs"] = logs
-        return result
+    result = {"output": output}
+    logs = [
+        {"level": record.levelno, "msg": record.getMessage()}
+        for record in log_handler.logs
+    ]
+    if logs:
+        result["logs"] = logs
+    return result
 
 
 ALLOWED_HASS = {"bus", "services", "states"}
