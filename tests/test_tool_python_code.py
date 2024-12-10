@@ -25,7 +25,7 @@ def test_test(hass):
 async def test_python_script_tool(
     hass: HomeAssistant, llm_context: llm.LLMContext, mock_init_component
 ) -> None:
-    """Test function tools with async function."""
+    """Test python script tool."""
     api = await llm.async_get_api(hass, "powerllm", llm_context)
 
     source = """
@@ -41,3 +41,24 @@ output["test2"] = "passed2"
     response = await api.async_call_tool(tool_input)
 
     assert response == {"output": {"test": "passed", "test2": "passed2"}}
+
+
+async def test_python_script_tool_import(
+    hass: HomeAssistant, llm_context: llm.LLMContext, mock_init_component
+) -> None:
+    """Test python script tool with import."""
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    source = """
+import math
+output["test"] = math.cos(0)
+    """
+
+    tool_input = llm.ToolInput(
+        tool_name="python_code_execute",
+        tool_args={"source": source},
+    )
+
+    response = await api.async_call_tool(tool_input)
+
+    assert response == {"output": {"test": 1.0}}
