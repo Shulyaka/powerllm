@@ -1,6 +1,5 @@
 """Test powerllm config flow."""
 
-import pytest
 import voluptuous as vol
 from homeassistant.const import ATTR_FRIENDLY_NAME
 from homeassistant.core import Context, HomeAssistant, State
@@ -12,19 +11,6 @@ from homeassistant.helpers import (
 )
 
 from custom_components.powerllm import llm_tools
-
-
-@pytest.fixture
-def llm_context() -> llm.LLMContext:
-    """Return tool input context."""
-    return llm.LLMContext(
-        platform="test_platform",
-        context=Context(),
-        user_prompt=None,
-        language=None,
-        assistant=None,
-        device_id=None,
-    )
 
 
 def test_test(hass):

@@ -12,6 +12,7 @@ This integration provides:
 4. Selectively Enable/Disable any tool
 5. Extra LLM tools:
    * Web, maps, and news search with Duck Duck Go
+   * Web scrapping to access the Internet
    * Permanent memory tool
    * Python code execution
 
@@ -69,11 +70,12 @@ There are two options:
 
 * Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example
 
-* Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent 'pytest-style'. All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example.
+* Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have type annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent ("pytest-style"). All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example.
+
+The tools in this repository use various techniques for demonstration.
 
 ## TODO
 
 * Weather forecast intent
-* Web scrapping using trafilatura
 * Ability to talk to other conversation agents (i.e. "Ask expert" for a reasoning model, or NLP conversation (Assist) for device control fallback)
 * Your suggestions!

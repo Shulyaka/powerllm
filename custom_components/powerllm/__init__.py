@@ -16,6 +16,7 @@ from .llm_tools import (  # noqa: F401
     deferred_register_tools,
     llm_tool as llm_tool,
 )
+from .tools.web_scrape import setup as setup_web_scrape_tool
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,5 +36,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.http.register_view(LLMToolsListView)
     hass.http.register_view(LLMToolView)
     deferred_register_tools(hass)
+    setup_web_scrape_tool(hass)
 
     return True

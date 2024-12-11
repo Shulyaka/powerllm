@@ -3,7 +3,8 @@
 from unittest.mock import patch
 
 import pytest
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant
+from homeassistant.helpers import llm
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -60,3 +61,35 @@ async def setup_ha(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, "assist_pipeline", {})
     assert await async_setup_component(hass, "intent", {})
     assert await async_setup_component(hass, "script", {})
+
+
+@pytest.fixture
+def llm_context() -> llm.LLMContext:
+    """Return tool input context."""
+    return llm.LLMContext(
+        platform="test_platform",
+        context=Context(user_id="12345"),
+        user_prompt=None,
+        language=None,
+        assistant=None,
+        device_id=None,
+    )
+
+
+@pytest.fixture
+async def async_call_tool(
+    hass: HomeAssistant, llm_context: llm.LLMContext, mock_init_component
+):
+    """Get the tool call function."""
+
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    async def _call_tool(name: str, **kwargs):
+        tool_input = llm.ToolInput(
+            tool_name=name,
+            tool_args=kwargs,
+        )
+
+        return await api.async_call_tool(tool_input)
+
+    return _call_tool

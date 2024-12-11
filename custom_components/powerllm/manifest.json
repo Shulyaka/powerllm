@@ -8,6 +8,6 @@
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/Shulyaka/powerllm/issues",
-  "requirements": ["duckduckgo-search==6.2.9", "RestrictedPython>=7.4"],
+  "requirements": ["duckduckgo-search==6.2.9", "RestrictedPython>=7.4", "trafilatura==2.0.0"],
   "version": "0.0.1"
 }
