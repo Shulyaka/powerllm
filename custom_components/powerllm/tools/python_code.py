@@ -41,7 +41,7 @@ class MyHandler(logging.Handler):
 
 
 @llm_tool
-def python_code_execute(hass: HomeAssistant, source: str, data: dict | None = None):
+def python_code_execute(hass: HomeAssistant, source: str):
     """Execute python code in a restricted environment.
 
     Use this tool for math calculations among other things.
@@ -54,7 +54,7 @@ def python_code_execute(hass: HomeAssistant, source: str, data: dict | None = No
     logger.addHandler(log_handler)
     try:
         printed = []
-        output = execute(hass, source, data, printed)
+        output = execute(hass, source, printed)
     except HomeAssistantError as e:
         output = {"error": type(e).__name__}
         if str(e):
@@ -160,7 +160,7 @@ def guarded_inplacevar(op: str, target: Any, operand: Any) -> Any:
     return op_fun(target, operand)
 
 
-def execute(hass, source, data=None, printed: list[str] | None = None):
+def execute(hass, source, printed: list[str] | None = None):
     """Execute Python source."""
 
     if printed is None:
@@ -279,13 +279,12 @@ def execute(hass, source, data=None, printed: list[str] | None = None):
         "_unpack_sequence_": guarded_unpack_sequence,
         "_inplacevar_": guarded_inplacevar,
         "hass": hass,
-        "data": data or {},
         "logger": logger,
         "output": {},
     }
 
     try:
-        _LOGGER.info("Executing script: %s", data)
+        _LOGGER.info("Executing script")
         # pylint: disable-next=exec-used
         exec(compiled.code, restricted_globals)  # noqa: S102
         _LOGGER.debug(
