@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import logging
 from collections.abc import Callable
@@ -289,6 +290,8 @@ class PowerFunctionTool(PowerLLMTool):
     attributes, then the value for that parameter will be provided by the
     conversation agent 'pytest-style'.
     All other arguments will be provided by the LLM.
+    Async functions are not allowed to use any blocking code, while a synchronous
+    function will be executed in a separate thread.
     """
 
     function: Callable
@@ -373,7 +376,11 @@ class PowerFunctionTool(PowerLLMTool):
 
         if inspect.iscoroutinefunction(self.function):
             return await self.function(**kwargs)
-        return self.function(**kwargs)
+
+        if hass.loop != asyncio.get_running_loop():
+            return self.function(**kwargs)
+
+        return await hass.loop.run_in_executor(None, lambda: self.function(**kwargs))
 
 
 @callback
