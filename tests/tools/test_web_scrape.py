@@ -24,7 +24,11 @@ async def test_web_scrape_tool(async_call_tool) -> None:
 </html>
 """
 
-    with patch("trafilatura.fetch_url", return_value=helloworld):
+    with patch("trafilatura.fetch_url", return_value=helloworld) as mock_fetch:
         response = await async_call_tool("web_scrape", url="example.com")
 
-    assert response == {"text": "This is a simple HTML page with a greeting message."}
+    mock_fetch.assert_called_once_with(url="example.com")
+    assert response == {
+        "title": "Hello, World!",
+        "text": "Hello, World!\nThis is a simple HTML page with a greeting message.",
+    }

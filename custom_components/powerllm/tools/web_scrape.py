@@ -11,25 +11,40 @@ from ..llm_tools import llm_tool
 _LOGGER = logging.getLogger(__name__)
 
 
+REMOVE_KEYS = {
+    "hostname",
+    "fingerprint",
+    "id",
+    "raw_text",
+    "language",
+    "image",
+    "pagetype",
+    "filedate",
+    "source",
+    "source-hostname",
+    "tags",
+}
+
+
 def setup(hass: HomeAssistant):
     """Register the tool on integration startup."""
 
     @llm_tool(hass)
     def web_scrape(url: str):
         """Get latest content of a web page."""
-        downloaded = trafilatura.fetch_url("linux.org.ru")
+        downloaded = trafilatura.fetch_url(url=url)
 
         parsed = trafilatura.extract(
             downloaded,
+            url=url,
             output_format="json",
             include_links=True,
             deduplicate=True,
-            favor_precision=True,
+            favor_precision=False,
+            favor_recall=True,
+            with_metadata=True,
         )
 
         result = json.loads(parsed)
 
-        if "comments" in result and not result["comments"]:
-            del result["comments"]
-
-        return result
+        return {k: v for k, v in result.items() if v and k not in REMOVE_KEYS}
