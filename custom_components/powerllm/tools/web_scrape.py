@@ -48,7 +48,10 @@ def setup(hass: HomeAssistant):
                 favor_recall=True,
                 with_metadata=True,
             )
-            result = json.loads(parsed)
+            if parsed:
+                result = json.loads(parsed)
+            else:
+                result = {"error": "No data parsed."}
         else:
             result = {"error": "No data downloaded."}
 
