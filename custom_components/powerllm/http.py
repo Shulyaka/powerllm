@@ -40,6 +40,32 @@ class LLMToolsListView(HomeAssistantView):
     url = f"/api/{DOMAIN}/" + "{api}"
     name = f"api:{DOMAIN}:api"
 
+    async def get(self, request: web.Request, api: str) -> web.Response:
+        """Get LLM Tools list."""
+        hass = request.app[KEY_HASS]
+
+        llm_context = llm.LLMContext(
+            platform=DOMAIN,
+            context=self.context(request),
+            user_prompt=None,
+            language=hass.config.language,
+            assistant=CONVERSATION_DOMAIN,
+            device_id=None,
+        )
+
+        try:
+            llm_api = await llm.async_get_api(hass, api, llm_context)
+            return self.json(
+                {"prompt": llm_api.api_prompt, "tools": async_llm_tools_json(llm_api)}
+            )
+        except HomeAssistantError as e:
+            return self.json_message(
+                str(e),
+                HTTPStatus.NOT_FOUND
+                if str(e).endswith(" not found")
+                else HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
     @RequestDataValidator(
         vol.Schema(
             {
@@ -50,7 +76,7 @@ class LLMToolsListView(HomeAssistantView):
         ),
         allow_empty=True,
     )
-    async def get(
+    async def post(
         self, request: web.Request, data: dict[str, Any], api: str
     ) -> web.Response:
         """Get LLM Tools list."""

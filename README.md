@@ -56,7 +56,11 @@ This is an extension of [Home Assistant REST API](https://developers.home-assist
 
 * GET `/api/powerllm/<api>`
 
-  Returns the prompt and the list of tools for a specific api. Optional parameters: `user_input`, `language`, `device_id`
+  Returns the prompt and the list of tools for a specific api.
+
+* POST `/api/powerllm/<api>`
+
+  Same as above, but accepts optional parameters: `user_input`, `language`, `device_id`
 
 * POST `/api/powerllm/<api>/<tool_name>`
 
