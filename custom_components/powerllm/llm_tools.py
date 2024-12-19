@@ -10,7 +10,7 @@ from types import NoneType, UnionType
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 import voluptuous as vol
-from homeassistant.core import HomeAssistant, State, callback
+from homeassistant.core import HomeAssistant, State, callback, is_callback
 from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
@@ -377,7 +377,7 @@ class PowerFunctionTool(PowerLLMTool):
         if inspect.iscoroutinefunction(self.function):
             return await self.function(**kwargs)
 
-        if hass.loop != asyncio.get_running_loop():
+        if is_callback(self.function) or hass.loop != asyncio.get_running_loop():
             return self.function(**kwargs)
 
         return await hass.loop.run_in_executor(None, lambda: self.function(**kwargs))
