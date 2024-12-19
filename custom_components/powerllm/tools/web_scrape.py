@@ -31,20 +31,33 @@ def setup(hass: HomeAssistant):
 
     @llm_tool(hass)
     def web_scrape(url: str):
-        """Get latest content of a web page."""
-        downloaded = trafilatura.fetch_url(url=url)
+        """Get text from a web page.
 
-        parsed = trafilatura.extract(
-            downloaded,
-            url=url,
-            output_format="json",
-            include_links=True,
-            deduplicate=True,
-            favor_precision=False,
-            favor_recall=True,
-            with_metadata=True,
-        )
+        Use it to get up-to-date information from the internet.
+        """
+        downloaded = trafilatura.fetch_response(url=url)
 
-        result = json.loads(parsed)
+        if downloaded.data:
+            parsed = trafilatura.extract(
+                downloaded.data,
+                url=downloaded.url,
+                output_format="json",
+                include_links=True,
+                deduplicate=True,
+                favor_precision=False,
+                favor_recall=True,
+                with_metadata=True,
+            )
+            result = json.loads(parsed)
+        else:
+            result = {"error": "No data downloaded."}
 
-        return {k: v for k, v in result.items() if v and k not in REMOVE_KEYS}
+        result = {k: v for k, v in result.items() if v and k not in REMOVE_KEYS}
+
+        if downloaded.url != url:
+            result["url"] = downloaded.url
+
+        if downloaded.status != 200:
+            result["status"] = downloaded.status
+
+        return result

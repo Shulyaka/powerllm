@@ -1,6 +1,6 @@
 """Test web scrape tool."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 def test_test(hass):
@@ -10,7 +10,10 @@ def test_test(hass):
 async def test_web_scrape_tool(async_call_tool) -> None:
     """Test web scrape tool."""
 
-    helloworld = """<!DOCTYPE html>
+    helloworld = MagicMock()
+    helloworld.status = 200
+    helloworld.url = "example.com"
+    helloworld.data = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -24,7 +27,7 @@ async def test_web_scrape_tool(async_call_tool) -> None:
 </html>
 """
 
-    with patch("trafilatura.fetch_url", return_value=helloworld) as mock_fetch:
+    with patch("trafilatura.fetch_response", return_value=helloworld) as mock_fetch:
         response = await async_call_tool("web_scrape", url="example.com")
 
     mock_fetch.assert_called_once_with(url="example.com")
