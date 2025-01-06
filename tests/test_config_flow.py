@@ -40,7 +40,7 @@ async def test_config_flow(hass: HomeAssistant):
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "user"
 
     # Advance to step 2
@@ -48,7 +48,7 @@ async def test_config_flow(hass: HomeAssistant):
         result["flow_id"], user_input=MOCK_CONFIG
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "init"
 
     # Advance to step 3
@@ -61,7 +61,7 @@ async def test_config_flow(hass: HomeAssistant):
         },
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "memory_prompts"
 
     # Advance to step 4
@@ -69,7 +69,7 @@ async def test_config_flow(hass: HomeAssistant):
         result["flow_id"], user_input=MOCK_OPTIONS_CONFIG.get(result["step_id"], {})
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "tool_selection"
 
     # Final result
@@ -79,7 +79,7 @@ async def test_config_flow(hass: HomeAssistant):
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "PowerLLM"
     assert result["data"] == MOCK_CONFIG
     assert result["options"] == MOCK_OPTIONS_CONFIG
@@ -91,7 +91,7 @@ async def test_options_flow(
 ) -> None:
     """Test a successful options flow."""
     options = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
-    assert options["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert options["type"] == data_entry_flow.FlowResultType.FORM
     assert options["step_id"] == "init"
 
     options = await hass.config_entries.options.async_configure(
@@ -103,14 +103,14 @@ async def test_options_flow(
             CONF_SCRIPT_EXPOSED_ONLY: False,
         },
     )
-    assert options["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert options["type"] == data_entry_flow.FlowResultType.FORM
     assert options["step_id"] == "memory_prompts"
 
     options = await hass.config_entries.options.async_configure(
         options["flow_id"],
         {},
     )
-    assert options["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert options["type"] == data_entry_flow.FlowResultType.FORM
     assert options["step_id"] == "tool_selection"
 
     options = await hass.config_entries.options.async_configure(
