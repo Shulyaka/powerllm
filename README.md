@@ -11,7 +11,7 @@ This integration provides:
 3. Enhanced and experimental versions of core 'Assist' LLM tools
 4. Selectively Enable/Disable any tool
 5. Extra LLM tools:
-   * Web, maps, and news search with Duck Duck Go
+   * Web and news search with Duck Duck Go
    * Web scrapping to access the Internet
    * Permanent memory tool
    * Python code execution
@@ -72,7 +72,7 @@ Other custom integrations can use `Power LLM` to add more tools to extend the fu
 
 There are two options:
 
-* Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example
+* Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example. The class must support deepcopy.
 
 * Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have type annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent ("pytest-style"). All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example. A synchronous function should be declared as `@callback`, or it will be executed in a separate thread than the main hass loop, while an async function will be run concurrently in the main event loop and therefore is not allowed to use any blocking operations. If using both `@llm_tool` and `@callback`, `@llm_tool` should be the outer decorator.
 

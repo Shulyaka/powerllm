@@ -24,6 +24,10 @@ class DDGBaseTool(PowerLLMTool):
         self._ddg = DDGS()
         self._region = region
 
+    def __deepcopy__(self, memo):
+        """Implement deepcopy support for conversaton trace as_dict."""
+        return type(self)(self._region)
+
 
 class DDGTextSearchTool(DDGBaseTool):
     """DuckDuckGo text search tool."""
