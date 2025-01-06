@@ -29,7 +29,6 @@ MOCK_OPTIONS_CONFIG = {
         "HassTurnOff": True,
         "HassTurnOn": True,
         "homeassistant_script": True,
-        "maps_search": True,
         "memory": True,
         "news": True,
         "websearch": True,

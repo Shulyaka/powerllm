@@ -21,6 +21,33 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm.const import CONF_PROMPT_ENTITIES
 
+INTENT_TOOLS = [
+    "HassTurnOn",
+    "HassTurnOff",
+    "HassGetState",
+    "HassSetPosition",
+]
+
+TIMER_TOOLS = [
+    "HassStartTimer",
+    "HassCancelTimer",
+    "HassCancelAllTimers",
+    "HassIncreaseTimer",
+    "HassDecreaseTimer",
+    "HassPauseTimer",
+    "HassUnpauseTimer",
+    "HassTimerStatus",
+]
+
+POWERLLM_TOOLS = [
+    "homeassistant_script",
+    "websearch",
+    "news",
+    "memory",
+    "python_code_execute",
+    "web_scrape",
+]
+
 
 def test_test(hass):
     """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
@@ -70,19 +97,19 @@ async def test_powerllm_api(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 11
+    assert len(api.tools) == len(INTENT_TOOLS) + len(POWERLLM_TOOLS)
 
     # Match all
     intent_handler.platforms = None
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 12
+    assert len(api.tools) == len(INTENT_TOOLS) + len(POWERLLM_TOOLS) + 1
 
     # Match specific domain
     intent_handler.platforms = {"light"}
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 12
+    assert len(api.tools) == len(INTENT_TOOLS) + len(POWERLLM_TOOLS) + 1
     tool = api.tools[4]
     assert tool.name == "test_intent"
     assert tool.description == "Execute Home Assistant test_intent intent"
@@ -278,26 +305,10 @@ async def test_powerllm_api_tools(
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert [tool.name for tool in api.tools] == [
-        "HassTurnOn",
-        "HassTurnOff",
-        "HassGetState",
-        "HassSetPosition",
-        "HassStartTimer",
-        "HassCancelTimer",
-        "HassCancelAllTimers",
-        "HassIncreaseTimer",
-        "HassDecreaseTimer",
-        "HassPauseTimer",
-        "HassUnpauseTimer",
-        "HassTimerStatus",
+        *INTENT_TOOLS,
+        *TIMER_TOOLS,
         "Super_crazy_intent_with_unique_name",
-        "homeassistant_script",
-        "websearch",
-        "news",
-        "maps_search",
-        "memory",
-        "python_code_execute",
-        "web_scrape",
+        *POWERLLM_TOOLS,
     ]
 
 
@@ -314,8 +325,8 @@ async def test_powerllm_api_description(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == 13
-    tool = api.tools[5]
+    assert len(api.tools) == len(INTENT_TOOLS) + len(POWERLLM_TOOLS) + 2
+    tool = api.tools[len(INTENT_TOOLS) + 1]
     assert tool.name == "test_intent"
     assert tool.description == "my intent handler"
 
