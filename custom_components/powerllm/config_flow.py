@@ -104,7 +104,10 @@ DDG_REGIONS = {
 
 
 class PowerLLMBaseFlow:
-    """Handle both config and option flow for Power LLM."""
+    """Handle both config and option flow for Power LLM.
+
+    Handles integration-specific config flow.
+    """
 
     VERSION = 1
     MINOR_VERSION = 1
@@ -131,7 +134,7 @@ class PowerLLMBaseFlow:
         )
 
     async def get_options_schema(self) -> vol.Schema:
-        """Get data schema."""
+        """Get options schema."""
         tmp_entry = ConfigEntry(
             discovery_keys={},
             domain=DOMAIN,
@@ -182,7 +185,7 @@ class PowerLLMBaseFlow:
                 vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
                 vol.Optional(CONF_MEMORY_PROMPTS): vol.Schema(
                     {
-                        user.id: selector.TextSelector(
+                        vol.Optional(user.id): selector.TextSelector(
                             selector.TextSelectorConfig(
                                 multiline=True,
                                 type=selector.TextSelectorType.TEXT,
@@ -288,7 +291,7 @@ class RecursiveDataFlow(PowerLLMBaseFlow):
         raise AttributeError
 
 
-class PowerLLMOptionsFlow(RecursiveDataFlow, OptionsFlow):
+class RecursiveOptionsFlow(RecursiveDataFlow, OptionsFlow):
     """Handle an options flow for Power LLM."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
@@ -320,7 +323,7 @@ class PowerLLMOptionsFlow(RecursiveDataFlow, OptionsFlow):
         return super().async_create_entry(data=options, **kwargs)
 
 
-class PowerLLMConfigFlow(RecursiveDataFlow, ConfigFlow, domain=DOMAIN):
+class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Power LLM."""
 
     def __init__(self) -> None:
@@ -369,4 +372,4 @@ class PowerLLMConfigFlow(RecursiveDataFlow, ConfigFlow, domain=DOMAIN):
         config_entry: ConfigEntry,
     ) -> OptionsFlow:
         """Create the options flow."""
-        return PowerLLMOptionsFlow(config_entry)
+        return RecursiveOptionsFlow(config_entry)
