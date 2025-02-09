@@ -6,12 +6,13 @@ import logging
 from functools import cache, partial
 
 import slugify as unicode_slug
+from homeassistant.components.climate import INTENT_GET_TEMPERATURE
 from homeassistant.components.cover.intent import INTENT_CLOSE_COVER, INTENT_OPEN_COVER
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.components.intent import async_device_supports_timers
 from homeassistant.components.lock import DOMAIN as LOCK_DOMAIN
 from homeassistant.components.script import DOMAIN as SCRIPT_DOMAIN
-from homeassistant.components.weather.intent import INTENT_GET_WEATHER
+from homeassistant.components.weather import INTENT_GET_WEATHER
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEFAULT, CONF_NAME
 from homeassistant.core import HomeAssistant, callback, split_entity_id
@@ -44,6 +45,7 @@ class PowerLLMAPI(llm.API):
     """API exposing PowerLLM tools to LLMs."""
 
     IGNORE_INTENTS = {
+        INTENT_GET_TEMPERATURE,
         INTENT_GET_WEATHER,
         INTENT_OPEN_COVER,  # deprecated
         INTENT_CLOSE_COVER,  # deprecated
