@@ -661,8 +661,8 @@ light.1:
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert api.api_prompt == (
         f"""{first_part_prompt}
-{lock_prompt}
 {area_prompt}
+{lock_prompt}
 {exposed_entities_prompt}"""
     )
 
@@ -673,6 +673,5 @@ light.1:
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert api.api_prompt == (
         f"""{first_part_prompt}
-{lock_prompt}
 {area_prompt}"""
     )

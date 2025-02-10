@@ -282,6 +282,10 @@ class PowerScriptTool(PowerLLMTool, llm.ScriptTool):
     """Power LLM Tool representing a Script."""
 
 
+class PowerCalendarGetEventsTool(PowerLLMTool, llm.CalendarGetEventsTool):
+    """LLM Tool allowing querying a calendar."""
+
+
 class PowerFunctionTool(PowerLLMTool):
     """LLM Tool representing an Python function.
 

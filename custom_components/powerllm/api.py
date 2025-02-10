@@ -6,16 +6,16 @@ import logging
 from functools import cache, partial
 
 import slugify as unicode_slug
+from homeassistant.components.calendar import DOMAIN as CALENDAR_DOMAIN
 from homeassistant.components.climate import INTENT_GET_TEMPERATURE
 from homeassistant.components.cover.intent import INTENT_CLOSE_COVER, INTENT_OPEN_COVER
-from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.components.intent import async_device_supports_timers
 from homeassistant.components.lock import DOMAIN as LOCK_DOMAIN
 from homeassistant.components.script import DOMAIN as SCRIPT_DOMAIN
 from homeassistant.components.weather import INTENT_GET_WEATHER
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEFAULT, CONF_NAME
-from homeassistant.core import HomeAssistant, callback, split_entity_id
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
@@ -33,7 +33,12 @@ from .const import (
     CONF_TOOL_SELECTION,
     DOMAIN,
 )
-from .llm_tools import PowerIntentTool, PowerLLMTool, PowerScriptTool
+from .llm_tools import (
+    PowerCalendarGetEventsTool,
+    PowerIntentTool,
+    PowerLLMTool,
+    PowerScriptTool,
+)
 from .tools.duckduckgo import DDGNewsTool, DDGTextSearchTool
 from .tools.memory import MemoryTool
 from .tools.script import DynamicScriptTool
@@ -98,11 +103,22 @@ class PowerLLMAPI(llm.API):
         tools: list[PowerLLMTool],
     ) -> str:
         """Return the prompt for the API."""
-        if not exposed_entities:
+        if not exposed_entities or not exposed_entities["entities"]:
             return (
                 "Only if the user wants to control a device, tell them to expose "
                 "entities to their voice assistant in Home Assistant."
             )
+        return "\n".join(
+            [
+                *self._async_get_preable(llm_context),
+                *self._async_get_exposed_entities_prompt(llm_context, exposed_entities),
+                *self._async_get_tools_prompt(llm_context, tools),
+            ]
+        )
+
+    @callback
+    def _async_get_preable(self, llm_context: llm.LLMContext) -> list[str]:
+        """Return the prompt for the API."""
 
         prompt = [
             (
@@ -111,11 +127,6 @@ class PowerLLMAPI(llm.API):
                 "When controlling an area, prefer passing just area name and domain."
             )
         ]
-        if any(
-            entity.get("domain") == LOCK_DOMAIN for entity in exposed_entities.values()
-        ):
-            prompt.append("Use HassTurnOn to lock and HassTurnOff to unlock a lock.")
-
         area: ar.AreaEntry | None = None
         floor: fr.FloorEntry | None = None
         if llm_context.device_id:
@@ -150,31 +161,47 @@ class PowerLLMAPI(llm.API):
         ):
             prompt.append("This device is not able to start timers.")
 
-        if self.config_entry.options[CONF_PROMPT_ENTITIES]:
-            if exposed_entities:
+        return prompt
+
+    @callback
+    def _async_get_exposed_entities_prompt(
+        self, llm_context: llm.LLMContext, exposed_entities: dict | None
+    ) -> list[str]:
+        """Return the prompt for the API for exposed entities."""
+        prompt = []
+
+        if (
+            self.config_entry.options[CONF_PROMPT_ENTITIES]
+            and exposed_entities
+            and exposed_entities["entities"]
+        ):
+            if any(
+                entity.get("domain") == LOCK_DOMAIN
+                for entity in exposed_entities["entities"].values()
+            ):
                 prompt.append(
-                    "An overview of the areas and the devices in this smart home:"
+                    "Use HassTurnOn to lock and HassTurnOff to unlock a lock."
                 )
-                prompt.append(yaml.dump(exposed_entities))
-        else:
-            exposed_scripts = {
-                entity_id: info
-                for entity_id, info in exposed_entities.items()
-                if info.get("domain") == SCRIPT_DOMAIN
-            }
-            if exposed_scripts:
-                prompt.append(
-                    "There are following scripts that can be run with HassTurnOn:"
-                )
-                prompt.append(yaml.dump(exposed_scripts))
+
+            prompt.append(
+                "An overview of the areas and the devices in this smart home:"
+            )
+            prompt.append(yaml.dump(exposed_entities["entities"]))
+
+        return prompt
+
+    @callback
+    def _async_get_tools_prompt(
+        self, llm_context: llm.LLMContext, tools: list[PowerLLMTool]
+    ) -> list[str]:
+        """Return the prompt for the API for available tools."""
+        prompt = []
 
         for tool in tools:
-            tools_prompt = set()
             if (tool_prompt := tool.prompt(self.hass, llm_context)) is not None:
-                tools_prompt.add(tool_prompt)
-            prompt.extend(tools_prompt)
+                prompt.append(tool_prompt)
 
-        return "\n".join(prompt)
+        return prompt
 
     @callback
     def _async_get_tools(
@@ -207,15 +234,15 @@ class PowerLLMAPI(llm.API):
         exposed_domains: set[str] | None = None
         if exposed_entities is not None:
             exposed_domains = {
-                split_entity_id(entity_id)[0] for entity_id in exposed_entities
+                info["domain"] for info in exposed_entities["entities"].values()
             }
-            if exposed_domains:
-                intent_handlers = [
-                    intent_handler
-                    for intent_handler in intent_handlers
-                    if intent_handler.platforms is None
-                    or intent_handler.platforms & exposed_domains
-                ]
+
+            intent_handlers = [
+                intent_handler
+                for intent_handler in intent_handlers
+                if intent_handler.platforms is None
+                or intent_handler.platforms & exposed_domains
+            ]
 
         tools: list[PowerLLMTool] = [
             PowerIntentTool(
@@ -226,14 +253,17 @@ class PowerLLMAPI(llm.API):
             for intent_handler in intent_handlers
         ]
 
-        if llm_context.assistant is not None:
-            for state in self.hass.states.async_all(SCRIPT_DOMAIN):
-                if not async_should_expose(
-                    self.hass, llm_context.assistant, state.entity_id
-                ):
-                    continue
+        if exposed_entities:
+            if exposed_entities[CALENDAR_DOMAIN]:
+                names = []
+                for info in exposed_entities[CALENDAR_DOMAIN].values():
+                    names.extend(info["names"].split(", "))
+                tools.append(PowerCalendarGetEventsTool(names))
 
-                tools.append(PowerScriptTool(self.hass, state.entity_id))
+            tools.extend(
+                PowerScriptTool(self.hass, script_entity_id)
+                for script_entity_id in exposed_entities[SCRIPT_DOMAIN]
+            )
 
         tools.append(
             DynamicScriptTool(self.config_entry.options[CONF_SCRIPT_EXPOSED_ONLY])
