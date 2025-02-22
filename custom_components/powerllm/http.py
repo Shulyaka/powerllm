@@ -181,7 +181,9 @@ def async_llm_tools_json(api: llm.APIInstance) -> list[dict[str, Any]]:
         tool_spec = {"name": tool.name}
         if tool.description:
             tool_spec["description"] = tool.description
-        tool_spec["parameters"] = convert(tool.parameters)
+        tool_spec["parameters"] = convert(
+            tool.parameters, custom_serializer=api.custom_serializer
+        )
         return tool_spec
 
     return [format_tool(tool) for tool in api.tools]
