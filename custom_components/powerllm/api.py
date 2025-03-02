@@ -7,7 +7,6 @@ from functools import cache, partial
 
 import slugify as unicode_slug
 from homeassistant.components.calendar import DOMAIN as CALENDAR_DOMAIN
-from homeassistant.components.climate import INTENT_GET_TEMPERATURE
 from homeassistant.components.cover.intent import INTENT_CLOSE_COVER, INTENT_OPEN_COVER
 from homeassistant.components.intent import async_device_supports_timers
 from homeassistant.components.lock import DOMAIN as LOCK_DOMAIN
@@ -50,7 +49,6 @@ class PowerLLMAPI(llm.API):
     """API exposing PowerLLM tools to LLMs."""
 
     IGNORE_INTENTS = {
-        INTENT_GET_TEMPERATURE,
         INTENT_GET_WEATHER,
         INTENT_OPEN_COVER,  # deprecated
         INTENT_CLOSE_COVER,  # deprecated
@@ -58,6 +56,7 @@ class PowerLLMAPI(llm.API):
         intent.INTENT_TOGGLE,
         intent.INTENT_GET_CURRENT_DATE,
         intent.INTENT_GET_CURRENT_TIME,
+        intent.INTENT_GET_TEMPERATURE,
         intent.INTENT_RESPOND,
     }
 
