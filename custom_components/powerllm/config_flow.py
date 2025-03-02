@@ -143,6 +143,7 @@ class PowerLLMBaseFlow:
             title="Temp",
             unique_id=None,
             version=0,
+            subentries_data=None,
             data={CONF_NAME: "Temp"},
             options={
                 CONF_PROMPT_ENTITIES: False,
