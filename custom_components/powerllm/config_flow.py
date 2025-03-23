@@ -104,7 +104,7 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN):
     MINOR_VERSION = 1
 
     async def async_validate_input(
-        self, step_id: str, step_schema: vol.Schema, step_data: dict[str, Any]
+        self, step_id: str, user_input: dict[str, Any]
     ) -> dict[str, str]:
         """Validate step data."""
         if step_id == "user":

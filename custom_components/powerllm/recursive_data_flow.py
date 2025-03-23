@@ -23,10 +23,14 @@ class RecursiveBaseFlow:
     MINOR_VERSION = 1
 
     async def async_validate_input(
-        self, step_id: str, step_schema: vol.Schema, step_data: dict[str, Any]
+        self, step_id: str, user_input: dict[str, Any]
     ) -> dict[str, str]:
         """Validate step data."""
         return {}
+
+    def step_enabled(self, step_id: str) -> bool:
+        """Check if the current data flow step is enabled."""
+        return True
 
     def title(self) -> str:
         """Return config flow title."""
@@ -71,7 +75,8 @@ class RecursiveDataFlow(RecursiveBaseFlow):
 
             yield name, vol.Schema(current_schema), data
             for var, val in recursive_schema.items():
-                yield from traverse_config(str(var), val, data.setdefault(var, {}))
+                if self.step_enabled(str(var)):
+                    yield from traverse_config(str(var), val, data.setdefault(var, {}))
 
         if not isinstance(self, OptionsFlow):
             yield from traverse_config("user", self.data_schema, self.data)
@@ -97,8 +102,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                 self.current_step_data[name] = var
             errors = await self.async_validate_input(
                 step_id=step_id,
-                step_schema=self.current_step_schema,
-                step_data=self.current_step_data,
+                user_input=user_input,
             )
             if not errors:
                 try:
