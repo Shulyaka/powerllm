@@ -57,12 +57,12 @@ class RecursiveDataFlow(RecursiveBaseFlow):
 
     def config_step_generator(
         self,
-    ) -> Generator[tuple[str, vol.Schema, dict], None, None]:
+    ) -> Generator[tuple[str, vol.Schema, dict, bool], None, None]:
         """Return a generator of the next step config."""
 
         def traverse_config(
-            name: str, schema: vol.Schema, data: dict
-        ) -> tuple[str, vol.Schema, dict]:
+            name: str, schema: vol.Schema, data: dict, last_config: bool = False
+        ) -> tuple[str, vol.Schema, dict, bool]:
             current_schema = {}
             recursive_schema = {}
             for var, val in schema.schema.items():
@@ -73,14 +73,24 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                 else:
                     current_schema[var] = val
 
-            yield name, vol.Schema(current_schema), data
-            for var, val in recursive_schema.items():
+            yield (
+                name,
+                vol.Schema(current_schema),
+                data,
+                last_config and not recursive_schema,
+            )
+            for index, (var, val) in enumerate(recursive_schema.items(), start=1):
                 if self.step_enabled(str(var)):
-                    yield from traverse_config(str(var), val, data.setdefault(var, {}))
+                    yield from traverse_config(
+                        str(var),
+                        val,
+                        data.setdefault(var, {}),
+                        last_config and index == len(recursive_schema),
+                    )
 
         if not isinstance(self, OptionsFlow):
-            yield from traverse_config("user", self.data_schema, self.data)
-        yield from traverse_config("init", self.options_schema, self.options)
+            yield from traverse_config("user", self.data_schema, self.data, False)
+        yield from traverse_config("init", self.options_schema, self.options, True)
 
     async def async_step(
         self, step_id: str, user_input: dict[str, Any] | None = None
@@ -92,6 +102,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                 self.current_step_id,
                 self.current_step_schema,
                 self.current_step_data,
+                self.last_step,
             ) = next(self.config_step)
         if self.current_step_id != step_id:
             raise RuntimeError("Unexpected step id")
@@ -110,6 +121,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                         self.current_step_id,
                         self.current_step_schema,
                         self.current_step_data,
+                        self.last_step,
                     ) = next(self.config_step)
                     return await self.async_step(self.current_step_id)
                 except StopIteration:
@@ -122,7 +134,10 @@ class RecursiveDataFlow(RecursiveBaseFlow):
         )
 
         return self.async_show_form(
-            step_id=self.current_step_id, data_schema=schema, errors=errors
+            step_id=self.current_step_id,
+            data_schema=schema,
+            errors=errors,
+            last_step=self.last_step,
         )
 
     def __getattr__(self, attr: str) -> Any:
