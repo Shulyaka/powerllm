@@ -249,3 +249,11 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
             pass
 
         return MyOptionsFlow(config_entry)
+
+    @classmethod
+    @callback
+    def async_supports_options_flow(cls, config_entry: ConfigEntry) -> bool:
+        """Return options flow support for this handler."""
+        return cls.get_options_schema is not RecursiveBaseFlow.get_options_schema or (
+            cls.options_schema is not None and cls.options_schema.schema
+        )
