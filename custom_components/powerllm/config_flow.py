@@ -115,10 +115,11 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
     ) -> dict[str, str]:
         """Validate step data."""
         if step_id == "user":
-            await self.async_set_unique_id(self.title())
+            await self.async_set_unique_id(self.title)
             self._abort_if_unique_id_configured()
         return {}
 
+    @property
     def title(self) -> str:
         """Return config flow title."""
         return self.data[CONF_NAME]

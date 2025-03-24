@@ -32,9 +32,10 @@ class RecursiveBaseFlow:
         """Check if the current data flow step is enabled."""
         return True
 
+    @property
     def title(self) -> str:
         """Return config flow title."""
-        raise NotImplementedError
+        raise self.domain
 
     async def get_data_schema(self) -> vol.Schema:
         """Get data schema."""
@@ -50,6 +51,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
 
     data_schema: vol.Schema | None = None
     options_schema: vol.Schema | None = None
+    domain: str | None = None
 
     def __init_subclass__(
         cls,
@@ -62,6 +64,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
         super().__init_subclass__(**kwargs)
         cls.data_schema = data_schema
         cls.options_schema = options_schema
+        cls.domain = kwargs.get("domain")
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -143,7 +146,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                     return await self.async_step(self.current_step_id)
                 except StopIteration:
                     return self.async_create_entry(
-                        title=self.title(), data=self.data, options=self.options
+                        title=self.title, data=self.data, options=self.options
                     )
 
         schema = self.add_suggested_values_to_schema(
@@ -241,6 +244,7 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
             cls,
             data_schema=cls.data_schema,
             options_schema=cls.options_schema,
+            domain=cls.domain,
         ):
             pass
 
