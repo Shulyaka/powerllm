@@ -38,18 +38,35 @@ class RecursiveBaseFlow:
 
     async def get_data_schema(self) -> vol.Schema:
         """Get data schema."""
-        return vol.Schema({})
+        raise NotImplementedError
 
     async def get_options_schema(self) -> vol.Schema:
         """Get options schema."""
-        return vol.Schema({})
+        raise NotImplementedError
 
 
 class RecursiveDataFlow(RecursiveBaseFlow):
     """Handle both config and option flow."""
 
+    data_schema: vol.Schema | None = None
+    options_schema: vol.Schema | None = None
+
+    def __init_subclass__(
+        cls,
+        *,
+        data_schema: vol.Schema | None = None,
+        options_schema: vol.Schema | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Set config and options schema if provided."""
+        super().__init_subclass__(**kwargs)
+        cls.data_schema = data_schema
+        cls.options_schema = options_schema
+
     def __init__(self) -> None:
         """Initialize the flow."""
+        self.data: Mapping[str, Any] | None = None
+        self.options: Mapping[str, Any] | None = None
         self.config_step = None
         self.current_step_schema = None
         self.current_step_id = None
@@ -154,18 +171,15 @@ class RecursiveOptionsFlow(RecursiveDataFlow, OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
-        self.data: Mapping[str, Any] = config_entry.data
-        self.options: Mapping[str, Any] = config_entry.options.copy()
-        self.data_schema: vol.Schema | None = None
-        self.options_schema: vol.Schema | None = None
         super().__init__()
+        self.data = config_entry.data
+        self.options = config_entry.options.copy()
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Options flow entry point."""
-        if self.data_schema is None:
-            self.data_schema = await self.get_data_schema()
+        if self.options_schema is None:
             self.options_schema = await self.get_options_schema()
         return await self.async_step("init", user_input)
 
@@ -184,25 +198,18 @@ class RecursiveOptionsFlow(RecursiveDataFlow, OptionsFlow):
 class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
     """Handle a config flow."""
 
-    def __init__(self) -> None:
-        """Initialize config flow."""
-        self.data_schema: vol.Schema | None = None
-        self.options_schema: vol.Schema | None = None
-        super().__init__()
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Config flow entry point."""
         if self.data_schema is None:
             self.data_schema = await self.get_data_schema()
+        if self.options_schema is None:
             self.options_schema = await self.get_options_schema()
-            self.data: Mapping[str, Any] = self.suggested_values_from_default(
-                self.data_schema
-            )
-            self.options: Mapping[str, Any] = self.suggested_values_from_default(
-                self.options_schema
-            )
+        if self.data is None:
+            self.data = self.suggested_values_from_default(self.data_schema)
+        if self.options is None:
+            self.options = self.suggested_values_from_default(self.options_schema)
         return await self.async_step("user", user_input)
 
     def suggested_values_from_default(
@@ -229,7 +236,12 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
     def async_get_options_flow(cls, config_entry: ConfigEntry) -> OptionsFlow:
         """Create the options flow."""
 
-        class MyOptionsFlow(RecursiveOptionsFlow, cls):
+        class MyOptionsFlow(
+            RecursiveOptionsFlow,
+            cls,
+            data_schema=cls.data_schema,
+            options_schema=cls.options_schema,
+        ):
             pass
 
         return MyOptionsFlow(config_entry)

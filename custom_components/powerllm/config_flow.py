@@ -97,7 +97,14 @@ DDG_REGIONS = {
 }
 
 
-class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN):
+DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_NAME): cv.string,
+    }
+)
+
+
+class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
     """Handle config and options flow for Power LLM."""
 
     VERSION = 1
@@ -115,14 +122,6 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN):
     def title(self) -> str:
         """Return config flow title."""
         return self.data[CONF_NAME]
-
-    async def get_data_schema(self) -> vol.Schema:
-        """Get data schema."""
-        return vol.Schema(
-            {
-                vol.Required(CONF_NAME): cv.string,
-            }
-        )
 
     async def get_options_schema(self) -> vol.Schema:
         """Get options schema."""
