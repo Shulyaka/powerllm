@@ -114,7 +114,6 @@ async def test_http_tool(
     resp = await client.post(
         "/api/powerllm/assist/OrderBeer",
         json={
-            "user_input": "I wish beer",
             "language": "en",
             "device_id": "12345",
             "tool_args": {"type": "Lager"},

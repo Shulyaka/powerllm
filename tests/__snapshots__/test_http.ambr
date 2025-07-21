@@ -4,7 +4,7 @@
     'prompt': 'Only if the user wants to control a device, tell them to expose entities to their voice assistant in Home Assistant.',
     'tools': list([
       dict({
-        'description': 'Turns on/opens a device or entity',
+        'description': "Turns on/opens/presses a device or entity. For locks, this performs a 'lock' action. Use for requests like 'turn on', 'activate', 'enable', or 'lock'.",
         'name': 'HassTurnOn',
         'parameters': dict({
           'properties': dict({
@@ -22,13 +22,16 @@
                   'garage',
                   'gas',
                   'gate',
+                  'identify',
                   'outlet',
                   'receiver',
+                  'restart',
                   'shade',
                   'shutter',
                   'speaker',
                   'switch',
                   'tv',
+                  'update',
                   'water',
                   'window',
                 ]),
@@ -55,7 +58,7 @@
         }),
       }),
       dict({
-        'description': 'Turns off/closes a device or entity',
+        'description': "Turns off/closes a device or entity. For locks, this performs an 'unlock' action. Use for requests like 'turn off', 'deactivate', 'disable', or 'unlock'.",
         'name': 'HassTurnOff',
         'parameters': dict({
           'properties': dict({
@@ -73,13 +76,16 @@
                   'garage',
                   'gas',
                   'gate',
+                  'identify',
                   'outlet',
                   'receiver',
+                  'restart',
                   'shade',
                   'shutter',
                   'speaker',
                   'switch',
                   'tv',
+                  'update',
                   'water',
                   'window',
                 ]),

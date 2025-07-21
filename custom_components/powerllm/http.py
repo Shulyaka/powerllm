@@ -47,7 +47,6 @@ class LLMToolsListView(HomeAssistantView):
         llm_context = llm.LLMContext(
             platform=DOMAIN,
             context=self.context(request),
-            user_prompt=None,
             language=hass.config.language,
             assistant=CONVERSATION_DOMAIN,
             device_id=None,
@@ -69,7 +68,6 @@ class LLMToolsListView(HomeAssistantView):
     @RequestDataValidator(
         vol.Schema(
             {
-                vol.Optional("user_input"): cv.string,
                 vol.Optional("language"): cv.string,
                 vol.Optional("device_id"): cv.string,
             }
@@ -85,7 +83,6 @@ class LLMToolsListView(HomeAssistantView):
         llm_context = llm.LLMContext(
             platform=DOMAIN,
             context=self.context(request),
-            user_prompt=data.get("user_input"),
             language=data.get("language", hass.config.language),
             assistant=CONVERSATION_DOMAIN,
             device_id=data.get("device_id"),
@@ -115,7 +112,6 @@ class LLMToolView(HomeAssistantView):
         vol.Schema(
             {
                 vol.Optional("tool_args", default={}): {cv.string: object},
-                vol.Optional("user_input"): cv.string,
                 vol.Optional("language"): cv.string,
                 vol.Optional("device_id"): cv.string,
             }
@@ -135,7 +131,6 @@ class LLMToolView(HomeAssistantView):
         llm_context = llm.LLMContext(
             platform=DOMAIN,
             context=self.context(request),
-            user_prompt=data.get("user_input"),
             language=data.get("language", hass.config.language),
             assistant=CONVERSATION_DOMAIN,
             device_id=data.get("device_id"),

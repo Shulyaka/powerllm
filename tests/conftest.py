@@ -69,7 +69,6 @@ def llm_context() -> llm.LLMContext:
     return llm.LLMContext(
         platform="test_platform",
         context=Context(user_id="12345"),
-        user_prompt=None,
         language=None,
         assistant=None,
         device_id=None,

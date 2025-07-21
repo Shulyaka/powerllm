@@ -11,6 +11,7 @@ from homeassistant.components.cover.intent import INTENT_CLOSE_COVER, INTENT_OPE
 from homeassistant.components.intent import async_device_supports_timers
 from homeassistant.components.lock import DOMAIN as LOCK_DOMAIN
 from homeassistant.components.script import DOMAIN as SCRIPT_DOMAIN
+from homeassistant.components.todo import DOMAIN as TODO_DOMAIN
 from homeassistant.components.weather import INTENT_GET_WEATHER
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEFAULT, CONF_NAME
@@ -34,9 +35,11 @@ from .const import (
 )
 from .llm_tools import (
     PowerCalendarGetEventsTool,
+    PowerGetLiveContextTool,
     PowerIntentTool,
     PowerLLMTool,
     PowerScriptTool,
+    PowerTodoGetItemsTool,
 )
 from .tools.duckduckgo import DDGNewsTool, DDGTextSearchTool
 from .tools.memory import MemoryTool
@@ -78,7 +81,7 @@ class PowerLLMAPI(llm.API):
         """Return the instance of the API."""
         if llm_context.assistant:
             exposed_entities: dict | None = llm._get_exposed_entities(
-                self.hass, llm_context.assistant
+                self.hass, llm_context.assistant, include_state=False
             )
         else:
             exposed_entities = None
@@ -103,10 +106,7 @@ class PowerLLMAPI(llm.API):
     ) -> str:
         """Return the prompt for the API."""
         if not exposed_entities or not exposed_entities["entities"]:
-            return (
-                "Only if the user wants to control a device, tell them to expose "
-                "entities to their voice assistant in Home Assistant."
-            )
+            return llm.NO_ENTITIES_PROMPT
         return "\n".join(
             [
                 *self._async_get_preable(llm_context),
@@ -160,6 +160,9 @@ class PowerLLMAPI(llm.API):
         ):
             prompt.append("This device is not able to start timers.")
 
+        if self.config_entry.options[CONF_PROMPT_ENTITIES]:
+            prompt.append(llm.DYNAMIC_CONTEXT_PROMPT)
+
         return prompt
 
     @callback
@@ -183,7 +186,8 @@ class PowerLLMAPI(llm.API):
                 )
 
             prompt.append(
-                "An overview of the areas and the devices in this smart home:"
+                "Static Context: An overview of the areas and the devices in this "
+                "smart home:"
             )
             prompt.append(yaml.dump(exposed_entities["entities"]))
 
@@ -259,10 +263,21 @@ class PowerLLMAPI(llm.API):
                     names.extend(info["names"].split(", "))
                 tools.append(PowerCalendarGetEventsTool(names))
 
+            if exposed_domains is not None and TODO_DOMAIN in exposed_domains:
+                names = []
+                for info in exposed_entities["entities"].values():
+                    if info["domain"] != TODO_DOMAIN:
+                        continue
+                    names.extend(info["names"].split(", "))
+                tools.append(PowerTodoGetItemsTool(names))
+
             tools.extend(
                 PowerScriptTool(self.hass, script_entity_id)
                 for script_entity_id in exposed_entities[SCRIPT_DOMAIN]
             )
+
+        if exposed_domains:
+            tools.append(PowerGetLiveContextTool())
 
         tools.append(
             DynamicScriptTool(self.config_entry.options[CONF_SCRIPT_EXPOSED_ONLY])

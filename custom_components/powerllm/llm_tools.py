@@ -246,22 +246,39 @@ class PowerIntentTool(PowerLLMTool):
             platform=llm_context.platform,
             intent_type=self.intent_handler.intent_type,
             slots=slots,
-            text_input=llm_context.user_prompt,
+            text_input=None,
             context=llm_context.context,
             language=llm_context.language,
             assistant=llm_context.assistant,
             device_id=llm_context.device_id,
         )
-        response = intent_response.as_dict()
-        if self._response_entities and intent_response.matched_states:
-            response["data"]["matched_states"] = [
+        return PowerIntentResponseDict(intent_response, self._response_entities, hass)
+
+
+class PowerIntentResponseDict(dict):
+    """Dictionary to represent an intent response resulting from a tool call."""
+
+    def __init__(
+        self,
+        intent_response: Any,
+        response_entities: bool = False,
+        hass: HomeAssistant | None = None,
+    ) -> None:
+        """Initialize the dictionary."""
+        if not isinstance(intent_response, intent.IntentResponse):
+            super().__init__(intent_response)
+            return
+
+        result = intent_response.as_dict()
+        if response_entities and intent_response.matched_states and hass is not None:
+            result["data"]["matched_states"] = [
                 _format_state(hass, state) for state in intent_response.matched_states
             ]
-        if self._response_entities and intent_response.unmatched_states:
-            response["data"]["unmatched_states"] = [
+        if response_entities and intent_response.unmatched_states and hass is not None:
+            result["data"]["unmatched_states"] = [
                 _format_state(hass, state) for state in intent_response.unmatched_states
             ]
-        del response["language"]
+        del result["language"]
 
         def remove_empty(value: JsonValueType):
             if isinstance(value, list):
@@ -274,8 +291,10 @@ class PowerIntentTool(PowerLLMTool):
                 if not value[key] and value[key] is not False:
                     del value[key]
 
-        remove_empty(response)
-        return response
+        remove_empty(result)
+
+        super().__init__(result)
+        self.original = intent_response
 
 
 class PowerScriptTool(PowerLLMTool, llm.ScriptTool):
@@ -283,7 +302,15 @@ class PowerScriptTool(PowerLLMTool, llm.ScriptTool):
 
 
 class PowerCalendarGetEventsTool(PowerLLMTool, llm.CalendarGetEventsTool):
-    """LLM Tool allowing querying a calendar."""
+    """Power LLM Tool allowing querying a calendar."""
+
+
+class PowerTodoGetItemsTool(PowerLLMTool, llm.TodoGetItemsTool):
+    """Power LLM Tool allowing querying a to-do list."""
+
+
+class PowerGetLiveContextTool(PowerLLMTool, llm.GetLiveContextTool):
+    """Power LLM Tool for getting the current state of exposed entities."""
 
 
 class PowerFunctionTool(PowerLLMTool):

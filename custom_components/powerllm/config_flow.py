@@ -146,7 +146,6 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
         tmp_context = llm.LLMContext(
             platform=DOMAIN,
             context=Context(user_id="Temp"),
-            user_prompt=None,
             language=None,
             assistant=None,
             device_id=None,
