@@ -14,6 +14,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 
 
 class RecursiveBaseFlow:
@@ -216,9 +217,11 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
         return await self.async_step("user", user_input)
 
     def suggested_values_from_default(
-        self, data_schema: vol.Schema | Mapping[str, Any]
+        self, data_schema: vol.Schema | Mapping[str, Any] | section
     ) -> Mapping[str, Any]:
         """Generate suggested values from schema markers."""
+        if isinstance(data_schema, section):
+            data_schema = data_schema.schema
         if isinstance(data_schema, vol.Schema):
             data_schema = data_schema.schema
 
@@ -228,7 +231,7 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
                 key.default, vol.Undefined
             ):
                 suggested_values[str(key)] = key.default()
-            if isinstance(value, (vol.Schema, dict)):
+            if isinstance(value, (vol.Schema, dict, section)):
                 value = self.suggested_values_from_default(value)
                 if value:
                     suggested_values[str(key)] = value
