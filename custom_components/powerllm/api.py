@@ -94,7 +94,7 @@ class PowerLLMAPI(llm.API):
             api_prompt=api_prompt,
             llm_context=llm_context,
             tools=tools,
-            custom_serializer=llm._selector_serializer,
+            custom_serializer=llm.selector_serializer,
         )
 
     @callback
