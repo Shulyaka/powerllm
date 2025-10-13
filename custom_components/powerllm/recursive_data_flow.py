@@ -247,7 +247,6 @@ class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
             cls,
             data_schema=cls.data_schema,
             options_schema=cls.options_schema,
-            domain=cls.domain,
         ):
             pass
 
