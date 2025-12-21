@@ -140,6 +140,17 @@
           'type': 'object',
         }),
       }),
+      dict({
+        'description': 'Provides the current date and time.',
+        'name': 'GetDateTime',
+        'parameters': dict({
+          'properties': dict({
+          }),
+          'required': list([
+          ]),
+          'type': 'object',
+        }),
+      }),
     ]),
   })
 # ---

@@ -13,6 +13,7 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, State, callback, is_callback
 from homeassistant.helpers import (
     area_registry as ar,
+    config_validation as cv,
     device_registry as dr,
     entity_registry as er,
     floor_registry as fr,
@@ -20,6 +21,7 @@ from homeassistant.helpers import (
     llm,
     template,
 )
+from homeassistant.helpers.template.helpers import resolve_area_id
 from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType, JsonValueType
 
@@ -142,6 +144,66 @@ EXPORTED_ATTRIBUTES = [
 ]
 
 
+def _area_name(hass: HomeAssistant, lookup_value: str) -> str | None:
+    """Get the area name from an area id, device id, or entity id."""
+    area_reg = ar.async_get(hass)
+    if area := area_reg.async_get_area(lookup_value):
+        return area.name
+
+    def _get_area_name(area_reg: ar.AreaRegistry, valid_area_id: str) -> str:
+        """Get area name from valid area ID."""
+        area = area_reg.async_get_area(valid_area_id)
+        assert area
+        return area.name
+
+    dev_reg = dr.async_get(hass)
+    ent_reg = er.async_get(hass)
+
+    try:
+        cv.entity_id(lookup_value)
+    except vol.Invalid:
+        pass
+    else:
+        if entity := ent_reg.async_get(lookup_value):
+            # If entity has an area ID, get the area name for that
+            if entity.area_id:
+                return _get_area_name(area_reg, entity.area_id)
+            # If entity has a device ID and the device exists with an area ID, get the
+            # area name for that
+            if (
+                entity.device_id
+                and (device := dev_reg.async_get(entity.device_id))
+                and device.area_id
+            ):
+                return _get_area_name(area_reg, device.area_id)
+
+    if (device := dev_reg.async_get(lookup_value)) and device.area_id:
+        return _get_area_name(area_reg, device.area_id)
+
+    return None
+
+
+def _floor_name(hass: HomeAssistant, lookup_value: str) -> str | None:
+    """Get the floor name from a floor id."""
+    floor_registry = fr.async_get(hass)
+
+    # Check if it's a floor ID
+    if floor := floor_registry.async_get_floor(lookup_value):
+        return floor.name
+
+    # Resolve to area ID and get floor name from area's floor
+    if aid := resolve_area_id(hass, lookup_value):
+        area_reg = ar.async_get(hass)
+        if (
+            (area := area_reg.async_get_area(aid))
+            and area.floor_id
+            and (floor := floor_registry.async_get_floor(area.floor_id))
+        ):
+            return floor.name
+
+    return None
+
+
 def _format_state(hass: HomeAssistant, entity_state: State) -> dict[str, Any]:
     """Format state for better understanding by a LLM."""
     entity_registry = er.async_get(hass)
@@ -155,17 +217,18 @@ def _format_state(hass: HomeAssistant, entity_state: State) -> dict[str, Any]:
     }
 
     if registry_entry := entity_registry.async_get(entity_state.entity_id):
-        if area_name := template.area_name(hass, entity_state.entity_id):
+        if area_name := _area_name(hass, entity_state.entity_id):
             result["area"] = area_name
-        if floor_name := template.floor_name(hass, entity_state.entity_id):
+        if floor_name := _floor_name(hass, entity_state.entity_id):
             result["floor"] = floor_name
         if len(registry_entry.aliases):
             result["aliases"] = list(registry_entry.aliases)
 
-    attributes: dict[str, Any] = {}
-    for attribute, value in entity_state.attributes.items():
-        if attribute in EXPORTED_ATTRIBUTES:
-            attributes[attribute] = value
+    attributes: dict[str, Any] = {
+        attribute: value
+        for attribute, value in entity_state.attributes.items()
+        if attribute in EXPORTED_ATTRIBUTES
+    }
     if attributes:
         result["attributes"] = attributes
 
@@ -336,8 +399,7 @@ class PowerFunctionTool(PowerLLMTool):
         self.function = function
 
         self.name = function.__name__
-        if self.name.startswith("async_"):
-            self.name = self.name[len("async_") :]
+        self.name = self.name.removeprefix("async_")
 
         self.description = inspect.getdoc(function)
 
@@ -425,7 +487,7 @@ def async_register_tool(hass: HomeAssistant, tool: PowerLLMTool | Callable) -> N
         tool = PowerFunctionTool(tool)
 
     if tool.name in tools:
-        _LOGGER.warning(f"Overwriting an already registered tool {tool.name}")
+        _LOGGER.warning("Overwriting an already registered tool %s", tool.name)
 
     tools[tool.name] = tool
 
