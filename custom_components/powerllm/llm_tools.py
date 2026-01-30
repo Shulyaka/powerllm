@@ -376,6 +376,10 @@ class PowerGetLiveContextTool(PowerLLMTool, llm.GetLiveContextTool):
     """Power LLM Tool for getting the current state of exposed entities."""
 
 
+class PowerGetDateTimeTool(PowerLLMTool, llm.GetDateTimeTool):
+    """Power LLM Tool for getting the current date and time."""
+
+
 class PowerFunctionTool(PowerLLMTool):
     """LLM Tool representing an Python function.
 

@@ -26,6 +26,7 @@ INTENT_TOOLS = [
     "HassTurnOff",
     "HassGetState",
     "HassSetPosition",
+    "HassStopMoving",
 ]
 
 TIMER_TOOLS = [
@@ -37,6 +38,10 @@ TIMER_TOOLS = [
     "HassPauseTimer",
     "HassUnpauseTimer",
     "HassTimerStatus",
+]
+
+ASSIST_TOOLS = [
+    "GetDateTime",
 ]
 
 POWERLLM_TOOLS = [
@@ -307,6 +312,7 @@ async def test_powerllm_api_tools(
         *INTENT_TOOLS,
         *TIMER_TOOLS,
         "Super_crazy_intent_with_unique_name",
+        *ASSIST_TOOLS,
         *POWERLLM_TOOLS,
     ]
 
@@ -324,7 +330,10 @@ async def test_powerllm_api_description(
 
     assert len(llm.async_get_apis(hass)) == 2
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert len(api.tools) == len(INTENT_TOOLS) + len(POWERLLM_TOOLS) + 2
+    assert (
+        len(api.tools)
+        == len(INTENT_TOOLS) + len(ASSIST_TOOLS) + len(POWERLLM_TOOLS) + 2
+    )
     tool = api.tools[len(INTENT_TOOLS) + 1]
     assert tool.name == "test_intent"
     assert tool.description == "my intent handler"

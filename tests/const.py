@@ -23,9 +23,11 @@ MOCK_OPTIONS_CONFIG = {
     CONF_SCRIPT_EXPOSED_ONLY: True,
     CONF_MEMORY_PROMPTS: {},
     CONF_TOOL_SELECTION: {
+        "GetDateTime": True,
         "HassCancelAllTimers": True,
         "HassGetState": True,
         "HassSetPosition": True,
+        "HassStopMoving": True,
         "HassTurnOff": True,
         "HassTurnOn": True,
         "homeassistant_script": True,

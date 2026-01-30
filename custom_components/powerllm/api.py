@@ -35,6 +35,7 @@ from .const import (
 )
 from .llm_tools import (
     PowerCalendarGetEventsTool,
+    PowerGetDateTimeTool,
     PowerGetLiveContextTool,
     PowerIntentTool,
     PowerLLMTool,
@@ -255,6 +256,8 @@ class PowerLLMAPI(llm.API):
             )
             for intent_handler in intent_handlers
         ]
+
+        tools.append(PowerGetDateTimeTool())
 
         if exposed_entities:
             if exposed_entities[CALENDAR_DOMAIN]:
