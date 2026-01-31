@@ -21,7 +21,9 @@ class MemoryTool(PowerLLMTool):
     name = "memory"
     description = (
         "Use this tool to remember personal facts about the user that would allow a "
-        "more personalized assistance"
+        "more personalized assistance. Call it every time the user tells you anything "
+        "about themselves that could still be relevant for future interactions, even "
+        "when not explicitly asked to do so"
     )
     parameters = vol.Schema(
         {
@@ -47,9 +49,11 @@ class MemoryTool(PowerLLMTool):
     @callback
     def prompt(self, hass: HomeAssistant, llm_context: LLMContext) -> str | None:
         """Additional system prompt for this tool."""
-        return self._config_entry.options.get(CONF_MEMORY_PROMPTS, {}).get(
-            llm_context.context.user_id
-        )
+        return f"<memory tool remembered user facts>\n{
+            self._config_entry.options.get(CONF_MEMORY_PROMPTS, {}).get(
+                llm_context.context.user_id
+            )
+        }\n</memory tool remembered user facts>"
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
