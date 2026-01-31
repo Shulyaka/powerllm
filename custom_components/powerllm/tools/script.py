@@ -1,7 +1,7 @@
 """Dynamic script execution tool."""
 
+import asyncio
 import logging
-from asyncio import create_task, shield, timeout
 
 import voluptuous as vol
 from homeassistant.components.conversation import DOMAIN as CONVERSATION_DOMAIN
@@ -89,8 +89,10 @@ class DynamicScriptTool(PowerLLMTool):
                     )
 
         try:
-            async with timeout(SCRIPT_TIMEOUT):
-                result = await shield(create_task(script.async_run(context=context)))
+            async with asyncio.timeout(SCRIPT_TIMEOUT):
+                result = await asyncio.shield(
+                    asyncio.create_task(script.async_run(context=context))
+                )
         except TimeoutError:
             return {
                 "success": True,

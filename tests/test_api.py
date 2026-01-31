@@ -535,8 +535,7 @@ async def test_powerllm_api_prompt(
     lock_entity.write_unavailable_state(hass)
 
     exposed_entities_prompt = (
-        "Live Context: An overview of the areas and the devices in this smart home:"
-        """
+        "Live Context: An overview of the areas and the devices in this smart home:" """
 - names: '1'
   domain: light
   state: unavailable
@@ -667,13 +666,11 @@ For general knowledge questions not about the home: Answer truthfully from inter
 """
     )
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
+    assert api.api_prompt == (f"""{first_part_prompt}
 {area_prompt}
 {no_timer_prompt}
 {dynamic_context_prompt}
-{stateless_exposed_entities_prompt}"""
-    )
+{stateless_exposed_entities_prompt}""")
 
     # Verify that the GetLiveContext tool returns the same results
     # as the exposed_entities_prompt
@@ -692,13 +689,11 @@ For general knowledge questions not about the home: Answer truthfully from inter
         "should target this area."
     )
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
+    assert api.api_prompt == (f"""{first_part_prompt}
 {area_prompt}
 {no_timer_prompt}
 {dynamic_context_prompt}
-{stateless_exposed_entities_prompt}"""
-    )
+{stateless_exposed_entities_prompt}""")
 
     # Add floor
     floor = floor_registry.async_create("2")
@@ -708,25 +703,21 @@ For general knowledge questions not about the home: Answer truthfully from inter
         "'turn on the lights' should target this area."
     )
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
+    assert api.api_prompt == (f"""{first_part_prompt}
 {area_prompt}
 {no_timer_prompt}
 {dynamic_context_prompt}
-{stateless_exposed_entities_prompt}"""
-    )
+{stateless_exposed_entities_prompt}""")
 
     # Register device for timers
     async_register_timer_handler(hass, device.id, lambda *args: None)
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     # The no_timer_prompt is gone
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
+    assert api.api_prompt == (f"""{first_part_prompt}
 {area_prompt}
 {dynamic_context_prompt}
-{stateless_exposed_entities_prompt}"""
-    )
+{stateless_exposed_entities_prompt}""")
 
     # Expose lock
     async_expose_entity(hass, "conversation", lock_entity.entity_id, True)
@@ -737,20 +728,16 @@ For general knowledge questions not about the home: Answer truthfully from inter
 """
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
+    assert api.api_prompt == (f"""{first_part_prompt}
 {area_prompt}
 {dynamic_context_prompt}
 {lock_prompt}
-{stateless_exposed_entities_prompt}"""
-    )
+{stateless_exposed_entities_prompt}""")
 
     options = mock_config_entry.options.copy()
     options[CONF_PROMPT_ENTITIES] = False
     hass.config_entries.async_update_entry(mock_config_entry, options=options)
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
-    assert api.api_prompt == (
-        f"""{first_part_prompt}
-{area_prompt}"""
-    )
+    assert api.api_prompt == (f"""{first_part_prompt}
+{area_prompt}""")

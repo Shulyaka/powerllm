@@ -78,7 +78,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
 
     def config_step_generator(
         self,
-    ) -> Generator[tuple[str, vol.Schema, dict, bool], None, None]:
+    ) -> Generator[tuple[str, vol.Schema, dict, bool]]:
         """Return a generator of the next step config."""
 
         def traverse_config(

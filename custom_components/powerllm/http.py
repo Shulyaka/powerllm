@@ -60,9 +60,11 @@ class LLMToolsListView(HomeAssistantView):
         except HomeAssistantError as e:
             return self.json_message(
                 str(e),
-                HTTPStatus.NOT_FOUND
-                if str(e).endswith(" not found")
-                else HTTPStatus.INTERNAL_SERVER_ERROR,
+                (
+                    HTTPStatus.NOT_FOUND
+                    if str(e).endswith(" not found")
+                    else HTTPStatus.INTERNAL_SERVER_ERROR
+                ),
             )
 
     @RequestDataValidator(
@@ -96,9 +98,11 @@ class LLMToolsListView(HomeAssistantView):
         except HomeAssistantError as e:
             return self.json_message(
                 str(e),
-                HTTPStatus.NOT_FOUND
-                if str(e).endswith(" not found")
-                else HTTPStatus.INTERNAL_SERVER_ERROR,
+                (
+                    HTTPStatus.NOT_FOUND
+                    if str(e).endswith(" not found")
+                    else HTTPStatus.INTERNAL_SERVER_ERROR
+                ),
             )
 
 
@@ -157,9 +161,11 @@ class LLMToolView(HomeAssistantView):
             _LOGGER.info("Tool response: %s", tool_response)
             return self.json(
                 tool_response,
-                HTTPStatus.NOT_FOUND
-                if str(e).endswith(" not found")
-                else HTTPStatus.INTERNAL_SERVER_ERROR,
+                (
+                    HTTPStatus.NOT_FOUND
+                    if str(e).endswith(" not found")
+                    else HTTPStatus.INTERNAL_SERVER_ERROR
+                ),
             )
 
         _LOGGER.info("Tool response: %s", tool_response)
