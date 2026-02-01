@@ -23,7 +23,8 @@ class MemoryTool(PowerLLMTool):
         "Use this tool to remember personal facts about the user that would allow a "
         "more personalized assistance. Call it every time the user tells you anything "
         "about themselves that could still be relevant for future interactions, even "
-        "when not explicitly asked to do so"
+        "when not explicitly asked to do so. Also include implicitly inferresd traits "
+        "of the user even when the user does not consciously states them"
     )
     parameters = vol.Schema(
         {
