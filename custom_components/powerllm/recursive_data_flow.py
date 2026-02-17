@@ -105,7 +105,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                     yield from traverse_config(
                         str(var),
                         val,
-                        data.setdefault(var, {}),
+                        data.setdefault(str(var), {}),
                         last_config and index == len(recursive_schema),
                     )
 
