@@ -50,10 +50,15 @@ class MemoryTool(PowerLLMTool):
     @callback
     def prompt(self, hass: HomeAssistant, llm_context: LLMContext) -> str | None:
         """Additional system prompt for this tool."""
+        memory_prompts_by_id = {
+            user_id: prompt
+            for user_name, prompts in self._config_entry.options.get(
+                CONF_MEMORY_PROMPTS, {}
+            ).items()
+            for user_id, prompt in prompts.items()
+        }
         return f"<memory tool remembered user facts>\n{
-            self._config_entry.options.get(CONF_MEMORY_PROMPTS, {}).get(
-                llm_context.context.user_id
-            )
+            memory_prompts_by_id.get(llm_context.context.user_id)
         }\n</memory tool remembered user facts>"
 
     async def async_call(
@@ -66,11 +71,27 @@ class MemoryTool(PowerLLMTool):
 
         options = self._config_entry.options.copy()
         options[CONF_MEMORY_PROMPTS] = options.get(CONF_MEMORY_PROMPTS, {}).copy()
-        if prompt := options[CONF_MEMORY_PROMPTS].get(llm_context.context.user_id):
+        user_name = None
+        for name, prompts in options[CONF_MEMORY_PROMPTS].items():
+            if llm_context.context.user_id in prompts:
+                user_name = name
+                options[CONF_MEMORY_PROMPTS][name] = prompts.copy()
+                break
+
+        if user_name is None:
+            user_name = (
+                await hass.auth.async_get_user(llm_context.context.user_id)
+            ).name or llm_context.context.user_id
+
+        if (
+            prompt := options[CONF_MEMORY_PROMPTS]
+            .setdefault(user_name, {})
+            .get(llm_context.context.user_id)
+        ):
             prompt += "\n"
         else:
             prompt = ""
-        options[CONF_MEMORY_PROMPTS][llm_context.context.user_id] = (
+        options[CONF_MEMORY_PROMPTS][user_name][llm_context.context.user_id] = (
             prompt + tool_input.tool_args["text"]
         )
         hass.config_entries.async_update_entry(self._config_entry, options=options)

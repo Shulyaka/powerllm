@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEFAULT, CONF_NAME
 from homeassistant.core import Context
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import config_validation as cv, llm, selector
 
 from .api import PowerLLMAPI
@@ -108,7 +109,7 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
     """Handle config and options flow for Power LLM."""
 
     VERSION = 1
-    MINOR_VERSION = 1
+    MINOR_VERSION = 2
 
     async def async_validate_input(
         self, step_id: str, user_input: dict[str, Any]
@@ -156,6 +157,15 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
         tools = [tool.name for tool in tmp_api.tools]
         tools.append(CONF_DEFAULT)
 
+        # Update memory prompts if user name has changed since options were last saved
+        if self.options:
+            memory_prompts = self.options.pop(CONF_MEMORY_PROMPTS, {})
+            self.options[CONF_MEMORY_PROMPTS] = {
+                (await self.hass.auth.async_get_user(user_id)).name: {user_id: prompt}
+                for user_name, prompts in memory_prompts.items()
+                for user_id, prompt in prompts.items()
+            }
+
         return vol.Schema(
             {
                 vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
@@ -176,11 +186,18 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
                 vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
                 vol.Optional(CONF_MEMORY_PROMPTS): vol.Schema(
                     {
-                        vol.Optional(user.id): selector.TextSelector(
-                            selector.TextSelectorConfig(
-                                multiline=True,
-                                type=selector.TextSelectorType.TEXT,
+                        vol.Optional(user.name): section(
+                            vol.Schema(
+                                {
+                                    vol.Optional(user.id): selector.TextSelector(
+                                        selector.TextSelectorConfig(
+                                            multiline=True,
+                                            type=selector.TextSelectorType.TEXT,
+                                        ),
+                                    ),
+                                }
                             ),
+                            {"collapsed": True},
                         )
                         for user in await self.hass.auth.async_get_users()
                         if not user.system_generated
