@@ -1,1 +1,1 @@
-"""Tests for the LLM Tools integration."""
+"""Tests for the Power LLM integration."""
