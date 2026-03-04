@@ -130,10 +130,11 @@ class RecursiveDataFlow(RecursiveBaseFlow):
             )
             for index, (var, val) in enumerate(recursive_schema.items(), start=1):
                 if self.step_enabled(str(var)):
+                    data[str(var)] = data.get(str(var), {}).copy()
                     yield from traverse_config(
                         str(var),
                         val,
-                        data.setdefault(str(var), {}),
+                        data[str(var)],
                         last_config and index == len(recursive_schema),
                     )
 
@@ -171,7 +172,7 @@ class RecursiveDataFlow(RecursiveBaseFlow):
                 if not errors:
                     for name in list(self.current_step_data.keys()):
                         if name not in user_input:
-                            for key in self.current_step_schema.schema.keys():
+                            for key in self.current_step_schema.schema:
                                 if key == name and isinstance(key, vol.Optional):
                                     self.current_step_data.pop(name)
                                     break
@@ -329,12 +330,11 @@ class RecursiveSubentryFlow(RecursiveDataFlow, ConfigSubentryFlow):
                 title=title,
                 data=self.options,
             )
-        else:
-            return self.async_update_and_abort(
-                self._get_entry(),
-                self._get_reconfigure_subentry(),
-                data=self.options,
-            )
+        return self.async_update_and_abort(
+            self._get_entry(),
+            self._get_reconfigure_subentry(),
+            data=self.options,
+        )
 
 
 class RecursiveConfigFlow(RecursiveDataFlow, ConfigFlow):
