@@ -462,7 +462,7 @@ class PowerFunctionTool(PowerLLMTool):
         llm_context: llm.LLMContext,
     ) -> Any:
         """Call the function."""
-        kwargs = tool_input.tool_args
+        kwargs = tool_input.tool_args.copy()
         for parameter in inspect.signature(self.function).parameters.values():
             if parameter.name == "hass":
                 kwargs["hass"] = hass
@@ -471,13 +471,18 @@ class PowerFunctionTool(PowerLLMTool):
             elif hasattr(llm.LLMContext, parameter.name):
                 kwargs[parameter.name] = getattr(llm_context, parameter.name)
 
-        if inspect.iscoroutinefunction(self.function):
-            return await self.function(**kwargs)
+        try:
+            if inspect.iscoroutinefunction(self.function):
+                return await self.function(**kwargs)
 
-        if is_callback(self.function) or hass.loop != asyncio.get_running_loop():
-            return self.function(**kwargs)
+            if is_callback(self.function) or hass.loop != asyncio.get_running_loop():
+                return self.function(**kwargs)
 
-        return await hass.loop.run_in_executor(None, lambda: self.function(**kwargs))
+            return await hass.loop.run_in_executor(
+                None, lambda: self.function(**kwargs)
+            )
+        except Exception as e:
+            return {"error": type(e).__name__, "message": str(e)}
 
 
 @callback

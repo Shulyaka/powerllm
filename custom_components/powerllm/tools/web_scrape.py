@@ -37,7 +37,7 @@ def setup(hass: HomeAssistant):
         """
         downloaded = trafilatura.fetch_response(url=url)
 
-        if downloaded.data:
+        if downloaded and downloaded.data:
             parsed = trafilatura.extract(
                 downloaded.data,
                 url=downloaded.url,
