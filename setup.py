@@ -27,6 +27,6 @@ setup(
     license="GNU General Public License v3.0",
     keywords="homeassistant home-assistant llm generative ai chatgpt chat gpt gemini",
     packages=find_packages(exclude=["tests"]),
-    python_requires=">=3.12",
+    python_requires=">=3.14",
     tests_require=["pytest"],
 )

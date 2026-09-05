@@ -8,7 +8,13 @@ from homeassistant.helpers import config_validation as cv, llm
 from homeassistant.helpers.typing import ConfigType
 
 from .api import PowerLLMAPI
-from .const import CONF_MEMORY_PROMPTS, DOMAIN
+from .const import (
+    CONF_INTENT_ENTITIES,
+    CONF_MEMORY_PROMPTS,
+    CONF_PROMPT_ENTITIES,
+    CONF_TOOL_SELECTION,
+    DOMAIN,
+)
 from .http import LLMToolsApiView, LLMToolsListView, LLMToolView
 from .llm_tools import (  # noqa: F401
     PowerLLMTool as PowerLLMTool,
@@ -59,6 +65,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         }
         hass.config_entries.async_update_entry(
             entry, options=new_options, minor_version=2
+        )
+
+    if entry.version == 1 and entry.minor_version < 3:
+        new_options = dict(entry.options)
+        new_options.pop(CONF_PROMPT_ENTITIES, None)
+        if not new_options.pop(CONF_INTENT_ENTITIES, True):
+            selection = dict(new_options.get(CONF_TOOL_SELECTION, {}))
+            selection["HassGetState"] = False
+            new_options[CONF_TOOL_SELECTION] = selection
+        hass.config_entries.async_update_entry(
+            entry, options=new_options, minor_version=3
         )
 
     _LOGGER.debug(

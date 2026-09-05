@@ -8,16 +8,13 @@
       },
       "init": {
         "data": {
-          "prompt_entities": "Include exposed entities into api prompt",
-          "intent_entities": "Include relevant entities into intent tool response",
           "duckduckgo_region": "DuckDuckGo Region",
           "script_exposed_only": "Only allow referencing exposed entities in scripts"
         },
         "data_description": {
-          "prompt_entities": "If disabled, LLM can still guess device name or query it using HassGetStates",
-          "intent_entities": "Also enables HassGetState intent for querying additional attributes of entities",
           "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
-        }
+        },
+        "description": "Select both Assist and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
       },
       "memory_prompts": {
         "title": "Memory tool prompts",
@@ -25,7 +22,7 @@
       },
       "tool_selection": {
         "title": "Tool selection",
-        "description": "Select tools available for this API.",
+        "description": "Select PowerLLM tools available for this API. These settings do not filter Assist tools.",
         "data": {
           "default": "Default"
         },
@@ -39,16 +36,13 @@
     "step": {
       "init": {
         "data": {
-          "prompt_entities": "Include exposed entities into api prompt",
-          "intent_entities": "Include relevant entities into intent tool response",
           "duckduckgo_region": "DuckDuckGo Region",
           "script_exposed_only": "Only allow referencing exposed entities in scripts"
         },
         "data_description": {
-          "prompt_entities": "If disabled, LLM can still guess device name or query it using HassGetStates",
-          "intent_entities": "Also enables HassGetState intent for querying additional attributes of entities",
           "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
-        }
+        },
+        "description": "Select both Assist and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
       },
       "memory_prompts": {
         "title": "Memory tool prompts",
@@ -56,13 +50,13 @@
       },
       "tool_selection": {
         "title": "Tool selection",
-        "description": "Select tools available for this API.",
+        "description": "Select PowerLLM tools available for this API. These settings do not filter Assist tools.",
         "data": {
           "default": "Default"
         },
         "data_description": {
           "default": "Other tools not listed above"
-       }
+        }
       }
     }
   }

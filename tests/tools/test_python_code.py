@@ -1,10 +1,6 @@
 """Test python script tool."""
 
 
-def test_test(hass):
-    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
-
-
 async def test_python_script_tool(async_call_tool) -> None:
     """Test python script tool."""
 

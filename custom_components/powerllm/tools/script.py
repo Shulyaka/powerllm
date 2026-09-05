@@ -4,14 +4,13 @@ import asyncio
 import logging
 
 import voluptuous as vol
-from homeassistant.components.conversation import DOMAIN as CONVERSATION_DOMAIN
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.llm import LLMContext, ToolInput
 from homeassistant.helpers.script import Script
 from homeassistant.util.json import JsonObjectType
-from homeassistant.util.yaml import parse_yaml
+from homeassistant.util.yaml import dump, parse_yaml
 
 from ..const import DOMAIN
 from ..llm_tools import PowerLLMTool
@@ -43,6 +42,20 @@ class DynamicScriptTool(PowerLLMTool):
     def __init__(self, exposed_only=True):
         """Initialize the tool."""
         self._exposed_only = exposed_only
+
+    @callback
+    def prompt(self, hass: HomeAssistant, llm_context: LLMContext) -> str | None:
+        """Map exposed entity IDs to names for generated scripts."""
+        entities = {
+            state.entity_id: state.name
+            for state in sorted(
+                hass.states.async_all(), key=lambda state: state.entity_id
+            )
+            if async_should_expose(hass, llm_context.assistant, state.entity_id)
+        }
+        if not entities:
+            return None
+        return "Entity IDs for scripts (entity_id: name):\n" + dump(entities)
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
@@ -82,7 +95,7 @@ class DynamicScriptTool(PowerLLMTool):
 
         if self._exposed_only:
             for entity_id in script.referenced_entities:
-                if not async_should_expose(hass, CONVERSATION_DOMAIN, entity_id):
+                if not async_should_expose(hass, llm_context.assistant, entity_id):
                     raise RuntimeError(
                         f"Referencing unknown or unexposed entity {entity_id}, please "
                         "rewrite the script"
