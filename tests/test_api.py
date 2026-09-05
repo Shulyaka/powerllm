@@ -44,8 +44,8 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
 
     api = await llm.async_get_api(hass, ["assist", "powerllm"], llm_context)
     tools = {tool.name for tool in api.tools}
-    assert "assist__HassTurnOn" in tools
-    assert "assist__GetDateTime" in tools
+    assert "assist__intent__HassTurnOn" in tools
+    assert "assist__llm__GetDateTime" in tools
     assert "powerllm__HassGetState" in tools
     assert "powerllm__HassTurnOn" not in tools
     assert "Static Context:" in api.api_prompt
@@ -55,7 +55,7 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
     ) == {"value": "works"}
     assert (
         await api.async_call_tool(
-            llm.ToolInput(tool_name="assist__GetDateTime", tool_args={})
+            llm.ToolInput(tool_name="assist__llm__GetDateTime", tool_args={})
         )
     )["success"] is True
     result = await api.async_call_tool(

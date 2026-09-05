@@ -4,7 +4,7 @@ import logging
 from http import HTTPStatus
 from typing import Any
 
-import voluptuous as vol
+import probatio as vol
 from aiohttp import web
 from homeassistant.components.conversation import DOMAIN as CONVERSATION_DOMAIN
 from homeassistant.components.http import KEY_HASS, HomeAssistantView
@@ -12,7 +12,6 @@ from homeassistant.components.http.data_validator import RequestDataValidator
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, llm
-from voluptuous_openapi import convert
 
 from .const import DOMAIN
 
@@ -182,8 +181,10 @@ def async_llm_tools_json(api: llm.APIInstance) -> list[dict[str, Any]]:
         tool_spec = {"name": tool.name}
         if tool.description:
             tool_spec["description"] = tool.description
-        tool_spec["parameters"] = convert(
-            tool.parameters, custom_serializer=api.custom_serializer
+        tool_spec["parameters"] = vol.to_openapi(
+            tool.parameters,
+            custom_serializer=api.custom_serializer,
+            openapi_version="3.1.0",
         )
         return tool_spec
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import (
     area_registry as ar,

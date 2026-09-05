@@ -6,7 +6,7 @@ from collections.abc import Generator, Iterable, Mapping
 from functools import partial
 from typing import Any
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigEntryState,

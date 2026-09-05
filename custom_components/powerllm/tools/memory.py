@@ -2,7 +2,7 @@
 
 import logging
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv

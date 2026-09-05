@@ -2,8 +2,8 @@
 
 from unittest.mock import patch
 
+import probatio as vol
 import pytest
-import voluptuous as vol
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import Context, HomeAssistant, State
 from homeassistant.helpers import (

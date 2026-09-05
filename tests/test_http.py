@@ -1,9 +1,13 @@
 """Tests for LLM Tools HTTP API."""
 
+import probatio as vol
 import pytest
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import selector
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
+
+from custom_components.powerllm.llm_tools import PowerLLMTool, async_register_tool
 
 
 @pytest.mark.usefixtures("mock_init_component")
@@ -24,6 +28,17 @@ async def test_http_tool_list(
     hass: HomeAssistant, hass_client: ClientSessionGenerator, method: str
 ) -> None:
     """Clients can fetch each API separately, with no duplicate control tools."""
+    tool = PowerLLMTool()
+    tool.name = "selector_tool"
+    tool.description = "A tool with a Home Assistant selector."
+    tool.parameters = vol.Schema(
+        {
+            vol.Required("entity_id"): selector.EntitySelector(),
+            vol.Optional("count", default=5): vol.Coerce(int),
+            vol.Optional("label"): vol.Maybe(str),
+        }
+    )
+    async_register_tool(hass, tool)
     hass.states.async_set("light.kitchen", "on", {"friendly_name": "Kitchen"})
     async_expose_entity(hass, "conversation", "light.kitchen", True)
     client = await hass_client()
@@ -33,14 +48,31 @@ async def test_http_tool_list(
     tools = {tool["name"]: tool for tool in data["tools"]}
     assert "HassGetState" in tools
     assert "HassTurnOn" not in tools
-    assert "domain" in tools["HassGetState"]["parameters"]["properties"]
+    assert tools["HassGetState"]["parameters"]["properties"]["domain"] == {
+        "type": "array",
+        "items": {"type": "string"},
+    }
+    assert tools["selector_tool"] == {
+        "name": "selector_tool",
+        "description": "A tool with a Home Assistant selector.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "entity_id": {"type": "string", "format": "entity_id"},
+                "count": {"type": "integer", "default": 5},
+                "label": {"anyOf": [{"type": "null"}, {"type": "string"}]},
+            },
+            "required": ["entity_id"],
+            "additionalProperties": False,
+        },
+    }
     assert "light.kitchen: Kitchen" in data["prompt"]
 
     response = await client.request(method, "/api/powerllm/assist")
     assert response.status == 200
     tools = {tool["name"] for tool in (await response.json())["tools"]}
-    assert "HassTurnOn" in tools
-    assert "GetDateTime" in tools
+    assert "intent__HassTurnOn" in tools
+    assert "llm__GetDateTime" in tools
     assert "HassGetState" not in tools
 
     response = await client.request(method, "/api/powerllm/non-existent")
@@ -76,7 +108,7 @@ async def test_http_tool(
         }
     ]
 
-    response = await client.post("/api/powerllm/assist/GetDateTime")
+    response = await client.post("/api/powerllm/assist/llm__GetDateTime")
     assert response.status == 200
     assert (await response.json())["success"] is True
 
