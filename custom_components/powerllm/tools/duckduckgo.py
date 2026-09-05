@@ -2,7 +2,7 @@
 
 import logging
 
-import voluptuous as vol
+import probatio as vol
 from duckduckgo_search import DDGS
 from duckduckgo_search.exceptions import DuckDuckGoSearchException
 from homeassistant.core import HomeAssistant

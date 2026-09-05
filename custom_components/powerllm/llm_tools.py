@@ -9,7 +9,7 @@ from collections.abc import Callable
 from types import NoneType, UnionType
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.core import HomeAssistant, callback, is_callback
 from homeassistant.helpers import llm
 

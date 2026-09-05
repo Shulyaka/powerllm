@@ -1,6 +1,7 @@
 """Test powerllm config flow."""
 
-import voluptuous as vol
+import probatio as vol
+import pytest
 from homeassistant.const import ATTR_FRIENDLY_NAME
 from homeassistant.core import Context, HomeAssistant, State
 from homeassistant.helpers import (
@@ -156,20 +157,16 @@ async def test_function_tool(
     assert tool.name == "test_function"
     assert tool.description == "Test tool description."
 
-    schema = {
-        vol.Required("required_arg"): int,
-        vol.Optional("optional_arg", default=9.6): vol.Any(float, str),
+    assert tool.parameters({"required_arg": 4}) == {
+        "required_arg": 4,
+        "optional_arg": 9.6,
     }
-    tool_schema = tool.parameters.schema
-    assert isinstance(tool_schema[vol.Optional("optional_arg", default=9.6)], vol.Any)
-    assert tool_schema[vol.Optional("optional_arg", default=9.6)].validators == (
-        float,
-        str,
-    )
-    schema[vol.Optional("optional_arg", default=9.6)] = tool_schema[
-        vol.Optional("optional_arg", default=9.6)
-    ]
-    assert tool_schema == schema
+    for value in (2.5, "text"):
+        args = {"required_arg": 4, "optional_arg": value}
+        assert tool.parameters(args) == args
+    for args in ({}, {"required_arg": "bad"}, {"required_arg": 4, "optional_arg": []}):
+        with pytest.raises(vol.Invalid):
+            tool.parameters(args)
 
     tool_input = llm.ToolInput(
         tool_name="test_function",
@@ -218,21 +215,20 @@ async def test_async_function_tool(
     assert tool.name == "test_async_function"
     assert tool.description == "Test tool description."
 
-    schema = {
-        vol.Required("required_arg"): vol.Any(int, {str: int}),
-        vol.Optional("optional_arg"): vol.Maybe(float),
+    assert tool.parameters({"required_arg": 4}) == {
+        "required_arg": 4,
+        "optional_arg": None,
     }
-    tool_schema = tool.parameters.schema
-
-    assert isinstance(tool_schema[vol.Optional("optional_arg")], vol.Any)
-    assert tool_schema[vol.Optional("optional_arg")].validators == (None, float)
-    schema[vol.Optional("optional_arg")] = tool_schema[vol.Optional("optional_arg")]
-
-    assert isinstance(tool_schema[vol.Required("required_arg")], vol.Any)
-    assert tool_schema[vol.Required("required_arg")].validators == (int, {str: int})
-    schema[vol.Required("required_arg")] = tool_schema[vol.Required("required_arg")]
-
-    assert tool_schema == schema
+    for value in (None, 2.5):
+        args = {"required_arg": {"count": 4}, "optional_arg": value}
+        assert tool.parameters(args) == args
+    for args in (
+        {},
+        {"required_arg": {"count": "bad"}},
+        {"required_arg": 4, "optional_arg": "bad"},
+    ):
+        with pytest.raises(vol.Invalid):
+            tool.parameters(args)
 
     tool_input = llm.ToolInput(
         tool_name="test_async_function",

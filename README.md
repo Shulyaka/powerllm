@@ -20,7 +20,7 @@ Please feel free to raise an issue if you have an idea of another useful tool!
 
 ## Installation
 
-Requires Home Assistant 2026.8 or later.
+Requires Home Assistant 2026.9 or later.
 
 1. Copy `custom_components/powerllm` directory from this repository into `custom_components/` directory in your config directory. Optionally use HACS for this step.
 2. Restart Home Assistant

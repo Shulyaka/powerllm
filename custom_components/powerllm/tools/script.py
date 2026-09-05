@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
