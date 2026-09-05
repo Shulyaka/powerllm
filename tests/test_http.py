@@ -1,155 +1,94 @@
 """Tests for LLM Tools HTTP API."""
 
-import voluptuous as vol
+import pytest
+from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, intent
-from pytest_homeassistant_custom_component.common import MockUser
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
-from syrupy.assertion import SnapshotAssertion
 
 
-def test_test(hass):
-    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
-
-
-async def test_http_api_list(
-    hass: HomeAssistant,
-    hass_client: ClientSessionGenerator,
-    hass_admin_user: MockUser,
-    mock_init_component,
-) -> None:
-    """Test LLM API list via HTTP API."""
+@pytest.mark.usefixtures("mock_init_component")
+async def test_http_api_list(hass_client: ClientSessionGenerator) -> None:
+    """Both API owners remain available through HTTP."""
     client = await hass_client()
-    resp = await client.get("/api/powerllm")
-
-    assert resp.status == 200
-    data = await resp.json()
-
-    assert data == [
+    response = await client.get("/api/powerllm")
+    assert response.status == 200
+    assert await response.json() == [
         {"name": "Assist", "id": "assist"},
         {"name": "PowerLLM", "id": "powerllm"},
     ]
 
 
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize("method", ["get", "post"])
 async def test_http_tool_list(
-    hass: HomeAssistant,
-    hass_client: ClientSessionGenerator,
-    hass_admin_user: MockUser,
-    snapshot: SnapshotAssertion,
-    mock_init_component,
+    hass: HomeAssistant, hass_client: ClientSessionGenerator, method: str
 ) -> None:
-    """Test LLM Tool list via HTTP API."""
-
-    class TestIntentHandler(intent.IntentHandler):
-        """Test Intent Handler."""
-
-        intent_type = "OrderBeer"
-        description = "Orders beer"
-
-        @property
-        def slot_schema(self) -> dict | None:
-            """Return a slot schema."""
-            return {vol.Required("type"): cv.string}
-
-        async def async_handle(self, intent):
-            """Handle the intent."""
-            assert intent.context.user_id == hass_admin_user.id
-            slots = self.async_validate_slots(intent.slots)
-            response = intent.create_response()
-            response.async_set_speech(f"I've ordered a {slots['type']['value']}!")
-            response.async_set_card(
-                "Beer ordered", f"You chose a {slots['type']['value']}."
-            )
-            return response
-
-    intent.async_register(hass, TestIntentHandler())
-
+    """Clients can fetch each API separately, with no duplicate control tools."""
+    hass.states.async_set("light.kitchen", "on", {"friendly_name": "Kitchen"})
+    async_expose_entity(hass, "conversation", "light.kitchen", True)
     client = await hass_client()
-    resp = await client.get("/api/powerllm/assist")
+    response = await client.request(method, "/api/powerllm/powerllm")
+    assert response.status == 200
+    data = await response.json()
+    tools = {tool["name"]: tool for tool in data["tools"]}
+    assert "HassGetState" in tools
+    assert "HassTurnOn" not in tools
+    assert "domain" in tools["HassGetState"]["parameters"]["properties"]
+    assert "light.kitchen: Kitchen" in data["prompt"]
 
-    assert resp.status == 200
-    data = await resp.json()
+    response = await client.request(method, "/api/powerllm/assist")
+    assert response.status == 200
+    tools = {tool["name"] for tool in (await response.json())["tools"]}
+    assert "HassTurnOn" in tools
+    assert "GetDateTime" in tools
+    assert "HassGetState" not in tools
 
-    data["tools"][0]["parameters"]["properties"]["device_class"]["items"]["enum"].sort()
-    data["tools"][1]["parameters"]["properties"]["device_class"]["items"]["enum"].sort()
-    assert data == snapshot
-
-    resp = await client.get("/api/powerllm/non-existent")
-    assert resp.status == 404
+    response = await client.request(method, "/api/powerllm/non-existent")
+    assert response.status == 404
 
 
+@pytest.mark.usefixtures("mock_init_component")
 async def test_http_tool(
-    hass: HomeAssistant,
-    hass_client: ClientSessionGenerator,
-    hass_admin_user: MockUser,
-    mock_init_component,
+    hass: HomeAssistant, hass_client: ClientSessionGenerator
 ) -> None:
-    """Test LLM Tool via HTTP API."""
-
-    class TestIntentHandler(intent.IntentHandler):
-        """Test Intent Handler."""
-
-        intent_type = "OrderBeer"
-        description = "Orders beer"
-
-        @property
-        def slot_schema(self) -> dict | None:
-            """Return a slot schema."""
-            return {vol.Required("type"): cv.string}
-
-        async def async_handle(self, intent):
-            """Handle the intent."""
-            assert intent.context.user_id == hass_admin_user.id
-            slots = self.async_validate_slots(intent.slots)
-            response = intent.create_response()
-            response.async_set_speech(f"I've ordered a {slots['type']['value']}!")
-            response.async_set_card(
-                "Beer ordered", f"You chose a {slots['type']['value']}."
-            )
-            return response
-
-    intent.async_register(hass, TestIntentHandler())
-
+    """HTTP state queries retain details and report invalid tools and arguments."""
+    hass.states.async_set(
+        "light.kitchen", "on", {"friendly_name": "Kitchen", "brightness": 100}
+    )
+    async_expose_entity(hass, "conversation", "light.kitchen", True)
     client = await hass_client()
-    resp = await client.post(
-        "/api/powerllm/assist/OrderBeer",
+    response = await client.post(
+        "/api/powerllm/powerllm/HassGetState",
         json={
             "language": "en",
-            "device_id": "12345",
-            "tool_args": {"type": "Lager"},
+            "tool_args": {"name": "Kitchen"},
         },
     )
+    assert response.status == 200
+    data = await response.json()
+    assert data["data"]["matched_states"] == [
+        {
+            "entity_id": "light.kitchen",
+            "name": "Kitchen",
+            "state": "on",
+            "last_changed": "0 seconds ago",
+            "attributes": {"brightness": 100},
+        }
+    ]
 
-    assert resp.status == 200
-    data = await resp.json()
+    response = await client.post("/api/powerllm/assist/GetDateTime")
+    assert response.status == 200
+    assert (await response.json())["success"] is True
 
-    assert data == {
-        "data": {
-            "failed": [],
-            "success": [],
-            "targets": [],
+    response = await client.post("/api/powerllm/non-existent/non-existent")
+    assert response.status == 404
+    response = await client.post("/api/powerllm/powerllm/HassTurnOn")
+    assert response.status == 404
+    response = await client.post(
+        "/api/powerllm/powerllm/HassGetState",
+        json={
+            "tool_args": {"unexpected": "value"},
         },
-        "response_type": "action_done",
-        "speech": {
-            "plain": {
-                "extra_data": None,
-                "speech": "I've ordered a Lager!",
-            },
-        },
-    }
-
-    resp = await client.post("/api/powerllm/non-existent/non-existent")
-    assert resp.status == 404
-
-    resp = await client.post("/api/powerllm/assist/non-existent")
-    assert resp.status == 404
-
-    resp = await client.post("/api/powerllm/assist/OrderBeer")
-
-    assert resp.status == 500
-    data = await resp.json()
-
-    assert data == {
-        "error": "InvalidSlotInfo",
-        "error_text": "Received invalid slot info for OrderBeer",
-    }
+    )
+    assert response.status == 500
+    assert (await response.json())["error"] == "MultipleInvalid"

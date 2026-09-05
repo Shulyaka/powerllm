@@ -3,10 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 
-def test_test(hass):
-    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
-
-
 async def test_web_scrape_tool(async_call_tool) -> None:
     """Test web scrape tool."""
 

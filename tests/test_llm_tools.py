@@ -11,10 +11,7 @@ from homeassistant.helpers import (
 )
 
 from custom_components.powerllm import llm_tools
-
-
-def test_test(hass):
-    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
+from custom_components.powerllm.tools import get_state
 
 
 def test_format_state(hass: HomeAssistant) -> None:
@@ -23,7 +20,7 @@ def test_format_state(hass: HomeAssistant) -> None:
         "light.kitchen", "on", attributes={ATTR_FRIENDLY_NAME: "kitchen light"}
     )
 
-    assert llm_tools._format_state(hass, state1) == {
+    assert get_state._format_state(hass, state1) == {
         "name": "kitchen light",
         "entity_id": "light.kitchen",
         "state": "on",
@@ -43,7 +40,7 @@ def test_format_state_with_attributes(hass: HomeAssistant) -> None:
         },
     )
 
-    assert llm_tools._format_state(hass, state1) == {
+    assert get_state._format_state(hass, state1) == {
         "name": "kitchen light",
         "entity_id": "light.kitchen",
         "state": "on",
@@ -66,7 +63,7 @@ def test_format_state_with_alias(
     )
     entity_registry.async_update_entity(state1.entity_id, aliases={"küchenlicht"})
 
-    assert llm_tools._format_state(hass, state1) == {
+    assert get_state._format_state(hass, state1) == {
         "name": "kitchen light",
         "entity_id": "light.kitchen",
         "state": "on",
@@ -90,7 +87,7 @@ def test_format_state_with_area(
     )
     entity_registry.async_update_entity(state1.entity_id, area_id=area_kitchen.id)
 
-    assert llm_tools._format_state(hass, state1) == {
+    assert get_state._format_state(hass, state1) == {
         "name": "kitchen light",
         "entity_id": "light.kitchen",
         "state": "on",
@@ -120,7 +117,7 @@ def test_format_state_with_floor(
     )
     entity_registry.async_update_entity(state1.entity_id, area_id=area_kitchen.id)
 
-    assert llm_tools._format_state(hass, state1) == {
+    assert get_state._format_state(hass, state1) == {
         "name": "kitchen light",
         "entity_id": "light.kitchen",
         "state": "on",
@@ -253,3 +250,24 @@ async def test_async_function_tool(
         "platform": "test_platform",
         "required_arg": 4,
     }
+
+
+def test_format_state_with_computed_alias(
+    hass: HomeAssistant, entity_registry: er.EntityRegistry
+) -> None:
+    """Resolve Core's computed-name marker into a readable alias."""
+    entry = entity_registry.async_get_or_create(
+        "light",
+        "demo",
+        "computed",
+        suggested_object_id="kitchen",
+        original_name="Kitchen light",
+    )
+    entity_registry.async_update_entity(
+        entry.entity_id, aliases=[er.COMPUTED_NAME, "Kitchen lamp"]
+    )
+    state = State(entry.entity_id, "on", {ATTR_FRIENDLY_NAME: "Kitchen light"})
+    assert get_state._format_state(hass, state)["aliases"] == [
+        "Kitchen light",
+        "Kitchen lamp",
+    ]

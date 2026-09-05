@@ -70,7 +70,7 @@ def llm_context() -> llm.LLMContext:
         platform="test_platform",
         context=Context(user_id="12345"),
         language=None,
-        assistant=None,
+        assistant="conversation",
         device_id=None,
     )
 

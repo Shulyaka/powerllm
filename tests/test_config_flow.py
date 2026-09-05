@@ -6,11 +6,11 @@ import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_DEFAULT
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.powerllm import async_migrate_entry
 from custom_components.powerllm.const import (
     CONF_DUCKDUCKGO_REGION,
-    CONF_INTENT_ENTITIES,
-    CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
     CONF_TOOL_SELECTION,
     DOMAIN,
@@ -27,10 +27,6 @@ def bypass_setup_fixture():
         return_value=True,
     ):
         yield
-
-
-def test_test(hass):
-    """Workaround for https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/discussions/160."""
 
 
 async def test_config_flow(hass: HomeAssistant):
@@ -97,8 +93,6 @@ async def test_options_flow(
     options = await hass.config_entries.options.async_configure(
         options["flow_id"],
         {
-            CONF_PROMPT_ENTITIES: False,
-            CONF_INTENT_ENTITIES: False,
             CONF_DUCKDUCKGO_REGION: "us-en",
             CONF_SCRIPT_EXPOSED_ONLY: False,
         },
@@ -118,8 +112,35 @@ async def test_options_flow(
         {"default": True},
     )
     assert options["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert options["data"][CONF_PROMPT_ENTITIES] is False
-    assert options["data"][CONF_INTENT_ENTITIES] is False
     assert options["data"][CONF_DUCKDUCKGO_REGION] == "us-en"
     assert options["data"][CONF_SCRIPT_EXPOSED_ONLY] is False
     assert options["data"][CONF_TOOL_SELECTION][CONF_DEFAULT] is True
+
+
+@pytest.mark.parametrize(
+    ("legacy_enabled", "selected", "expected"),
+    [(True, True, True), (True, False, False), (False, True, False)],
+)
+async def test_migrate_options(
+    hass: HomeAssistant, legacy_enabled: bool, selected: bool, expected: bool
+) -> None:
+    """Retire Assist options without re-enabling a previously disabled state tool."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data=MOCK_CONFIG,
+        version=1,
+        minor_version=2,
+        options={
+            **MOCK_OPTIONS_CONFIG,
+            "prompt_entities": False,
+            "intent_entities": legacy_enabled,
+            CONF_TOOL_SELECTION: {"HassGetState": selected, "custom_tool": False},
+        },
+    )
+    entry.add_to_hass(hass)
+    assert await async_migrate_entry(hass, entry)
+    assert entry.minor_version == 3
+    assert "prompt_entities" not in entry.options
+    assert "intent_entities" not in entry.options
+    assert entry.options[CONF_TOOL_SELECTION]["HassGetState"] is expected
+    assert entry.options[CONF_TOOL_SELECTION]["custom_tool"] is False

@@ -10,6 +10,7 @@ home_assistant_intents
 service_identity
 pyspeex_noise
 hassil
+gazetteer-matcher
 mutagen
 ha-ffmpeg
 pymicro-vad

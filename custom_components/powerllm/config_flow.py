@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
+from homeassistant.components.conversation import DOMAIN as CONVERSATION_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEFAULT, CONF_NAME
 from homeassistant.core import Context
@@ -15,9 +16,7 @@ from homeassistant.helpers import config_validation as cv, llm, selector
 from .api import PowerLLMAPI
 from .const import (
     CONF_DUCKDUCKGO_REGION,
-    CONF_INTENT_ENTITIES,
     CONF_MEMORY_PROMPTS,
-    CONF_PROMPT_ENTITIES,
     CONF_SCRIPT_EXPOSED_ONLY,
     CONF_TOOL_SELECTION,
     DOMAIN,
@@ -109,7 +108,7 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
     """Handle config and options flow for Power LLM."""
 
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     async def async_validate_input(
         self, step_id: str, user_input: dict[str, Any]
@@ -138,8 +137,6 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
             subentries_data=None,
             data={CONF_NAME: "Temp"},
             options={
-                CONF_PROMPT_ENTITIES: False,
-                CONF_INTENT_ENTITIES: True,
                 CONF_DUCKDUCKGO_REGION: "wt-wt",
                 CONF_SCRIPT_EXPOSED_ONLY: False,
             },
@@ -148,13 +145,13 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
             platform=DOMAIN,
             context=Context(user_id="Temp"),
             language=None,
-            assistant=None,
+            assistant=CONVERSATION_DOMAIN,
             device_id=None,
         )
-        tmp_api = await PowerLLMAPI(self.hass, tmp_entry).async_get_api_instance(
-            tmp_context
-        )
-        tools = [tool.name for tool in tmp_api.tools]
+        tools = [
+            tool.name
+            for tool in PowerLLMAPI(self.hass, tmp_entry)._async_get_tools(tmp_context)
+        ]
         tools.append(CONF_DEFAULT)
 
         # Update memory prompts if user name has changed since options were last saved
@@ -168,8 +165,6 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
 
         return vol.Schema(
             {
-                vol.Required(CONF_PROMPT_ENTITIES, default=True): bool,
-                vol.Required(CONF_INTENT_ENTITIES, default=True): bool,
                 vol.Required(
                     CONF_DUCKDUCKGO_REGION, default="wt-wt"
                 ): selector.SelectSelector(
