@@ -1,9 +1,12 @@
 """Tests for PowerLLM as an API that complements Assist."""
 
+from unittest.mock import patch
+
 import pytest
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import intent, llm
+from primp import BuilderError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm import llm_tool
@@ -142,3 +145,36 @@ async def test_get_state_selection(
     )
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert [tool.name for tool in api.tools] == ["HassGetState"]
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize("search_enabled", [True, False])
+async def test_api_without_search_client(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_config_entry: MockConfigEntry,
+    search_enabled: bool,
+) -> None:
+    """Discover enabled tools independently of search-client initialization."""
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            **mock_config_entry.options,
+            CONF_TOOL_SELECTION: {
+                "default": False,
+                "HassGetState": True,
+                "websearch": search_enabled,
+                "news": search_enabled,
+            },
+        },
+    )
+    with patch(
+        "custom_components.powerllm.tools.duckduckgo.DDGS",
+        side_effect=BuilderError('Invalid impersonate: "chrome_109"'),
+    ) as mock_ddgs:
+        api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    assert {tool.name for tool in api.tools} == (
+        {"HassGetState", "websearch", "news"} if search_enabled else {"HassGetState"}
+    )
+    mock_ddgs.assert_not_called()

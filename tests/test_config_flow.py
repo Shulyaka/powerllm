@@ -6,6 +6,7 @@ import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_DEFAULT
 from homeassistant.core import HomeAssistant
+from primp import BuilderError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm import async_migrate_entry
@@ -144,3 +145,35 @@ async def test_migrate_options(
     assert "intent_entities" not in entry.options
     assert entry.options[CONF_TOOL_SELECTION]["HassGetState"] is expected
     assert entry.options[CONF_TOOL_SELECTION]["custom_tool"] is False
+
+
+async def test_config_flow_without_search_client(hass: HomeAssistant) -> None:
+    """Open configuration even when a search client cannot be initialized."""
+    with patch(
+        "custom_components.powerllm.tools.duckduckgo.DDGS",
+        side_effect=BuilderError('Invalid impersonate: "chrome_109"'),
+    ) as mock_ddgs:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+
+    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "user"
+    mock_ddgs.assert_not_called()
+
+
+async def test_options_flow_without_search_client(
+    hass: HomeAssistant, mock_config_entry, mock_init_component
+) -> None:
+    """Open existing options independently of search-client initialization."""
+    with patch(
+        "custom_components.powerllm.tools.duckduckgo.DDGS",
+        side_effect=BuilderError('Invalid impersonate: "chrome_109"'),
+    ) as mock_ddgs:
+        result = await hass.config_entries.options.async_init(
+            mock_config_entry.entry_id
+        )
+
+    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "init"
+    mock_ddgs.assert_not_called()
