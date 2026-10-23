@@ -3,13 +3,14 @@
 import logging
 
 import probatio as vol
-from duckduckgo_search import DDGS
-from duckduckgo_search.exceptions import DuckDuckGoSearchException
+from ddgs import DDGS
+from ddgs.exceptions import DDGSException
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.llm import LLMContext, ToolInput
 from homeassistant.util.json import JsonObjectType
+from primp import PrimpError
 
 from ..llm_tools import PowerLLMTool
 
@@ -21,7 +22,6 @@ class DDGBaseTool(PowerLLMTool):
 
     def __init__(self, region: str = "wt-wt"):
         """Initialize the tool."""
-        self._ddg = DDGS()
         self._region = region
 
     def __deepcopy__(self, memo):
@@ -48,15 +48,15 @@ class DDGTextSearchTool(DDGBaseTool):
     ) -> JsonObjectType:
         """Execute text search."""
         try:
-            return await hass.loop.run_in_executor(
-                None,
-                lambda: self._ddg.text(
+            return await hass.async_add_executor_job(
+                lambda: DDGS().text(
                     tool_input.tool_args["query"],
                     region=self._region,
                     max_results=tool_input.tool_args.get("max_results"),
+                    backend="duckduckgo",
                 ),
             ) or {"error": "No results returned"}
-        except DuckDuckGoSearchException as e:
+        except (DDGSException, PrimpError) as e:
             raise HomeAssistantError(str(e)) from e
 
 
@@ -79,13 +79,13 @@ class DDGNewsTool(DDGBaseTool):
     ) -> JsonObjectType:
         """Execute news search."""
         try:
-            return await hass.loop.run_in_executor(
-                None,
-                lambda: self._ddg.news(
+            return await hass.async_add_executor_job(
+                lambda: DDGS().news(
                     tool_input.tool_args["keywords"],
                     region=self._region,
                     max_results=tool_input.tool_args.get("max_results"),
+                    backend="duckduckgo",
                 ),
             ) or {"error": "No results returned"}
-        except DuckDuckGoSearchException as e:
+        except (DDGSException, PrimpError) as e:
             raise HomeAssistantError(str(e)) from e
