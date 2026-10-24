@@ -10,19 +10,32 @@ from primp import BuilderError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm import llm_tool
-from custom_components.powerllm.const import CONF_MEMORY_PROMPTS, CONF_TOOL_SELECTION
+from custom_components.powerllm.api import PowerLLMAPI
+from custom_components.powerllm.const import (
+    CONF_MEMORY_PROMPTS,
+    CONF_TOOL_SELECTION,
+    DOMAIN,
+)
 
 from . import tool_result_data
 
 
 @pytest.mark.usefixtures("mock_init_component")
-async def test_powerllm_tools(hass: HomeAssistant, llm_context: llm.LLMContext) -> None:
+async def test_powerllm_tools(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Expose extras without discovering arbitrary intents or duplicating Assist."""
 
     class CustomIntent(intent.IntentHandler):
         intent_type = "CustomIntent"
 
     intent.async_register(hass, CustomIntent())
+    tools = PowerLLMAPI(hass, mock_config_entry)._async_get_tools(llm_context)
+    assert all(tool.integration == DOMAIN for tool in tools)
+
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert {tool.name for tool in api.tools} == {
         "HassGetState",
@@ -33,6 +46,9 @@ async def test_powerllm_tools(hass: HomeAssistant, llm_context: llm.LLMContext) 
         "python_code_execute",
         "web_scrape",
     }
+    assert not any(
+        "without an integration" in record.message for record in caplog.records
+    )
 
 
 @pytest.mark.usefixtures("mock_init_component")

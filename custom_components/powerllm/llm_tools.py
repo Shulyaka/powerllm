@@ -21,6 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 class PowerLLMTool(llm.Tool):
     """Base class for Power LLM Tools."""
 
+    integration = DOMAIN
+
     @callback
     def prompt(self, hass: HomeAssistant, llm_context: llm.LLMContext) -> str | None:
         """Additional system prompt for this tool."""

@@ -12,6 +12,7 @@ from homeassistant.helpers import (
 )
 
 from custom_components.powerllm import llm_tools
+from custom_components.powerllm.const import DOMAIN
 from custom_components.powerllm.tools import get_state
 
 from . import tool_result_data
@@ -154,6 +155,7 @@ async def test_function_tool(
         call["optional_arg"] = optional_arg
         return {"result": "test_response"}
 
+    assert hass.data[DOMAIN]["test_function"].integration == DOMAIN
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     tool = list(api.tools)[-1]
     assert tool.name == "test_function"
@@ -212,6 +214,7 @@ async def test_async_function_tool(
         call["optional_arg"] = optional_arg
         return {"result": "test_response"}
 
+    assert hass.data[DOMAIN]["test_async_function"].integration == DOMAIN
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     tool = list(api.tools)[-1]
     assert tool.name == "test_async_function"
@@ -248,6 +251,36 @@ async def test_async_function_tool(
         "platform": "test_platform",
         "required_arg": 4,
     }
+
+
+@pytest.mark.parametrize("instance_integration", [None, "instance_provider"])
+async def test_tool_integration_override(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_init_component,
+    instance_integration: str | None,
+) -> None:
+    """Preserve provider metadata from external tool classes and instances."""
+
+    class ExternalTool(llm_tools.PowerLLMTool):
+        """Tool supplied by a separate integration."""
+
+        name = "external_tool"
+        integration = "external_provider"
+
+    tool = ExternalTool()
+    expected_integration = "external_provider"
+    if instance_integration is not None:
+        tool.integration = instance_integration
+        expected_integration = instance_integration
+
+    llm_tools.async_register_tool(hass, tool)
+    assert tool.integration == expected_integration
+
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+    registered = next(tool for tool in api.tools if tool.name == "external_tool")
+    assert registered is tool
+    assert registered.integration == expected_integration
 
 
 def test_format_state_with_computed_alias(
