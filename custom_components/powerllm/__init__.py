@@ -32,7 +32,12 @@ CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     api = PowerLLMAPI(hass, entry)
-    llm.async_register_api(hass, api)
+    entry.async_on_unload(llm.async_register_api(hass, api))
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload this entry and run its registered cleanup callbacks."""
     return True
 
 
