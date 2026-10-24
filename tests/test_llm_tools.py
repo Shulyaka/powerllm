@@ -5,7 +5,12 @@ from functools import wraps
 import probatio as vol
 import pytest
 from homeassistant.const import ATTR_FRIENDLY_NAME
-from homeassistant.core import Context, HomeAssistant, State
+from homeassistant.core import Context, HomeAssistant, State, callback
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceValidationError,
+    Unauthorized,
+)
 from homeassistant.helpers import (
     area_registry as ar,
     entity_registry as er,
@@ -253,6 +258,60 @@ async def test_async_function_tool(
         "platform": "test_platform",
         "required_arg": 4,
     }
+
+
+@pytest.mark.parametrize("execution", ["async", "callback", "executor"])
+@pytest.mark.parametrize(
+    "error",
+    [
+        ValueError("Invalid operation"),
+        HomeAssistantError("Tool failed"),
+        ServiceValidationError("Service rejected"),
+        Unauthorized(),
+        vol.Invalid("Invalid value"),
+    ],
+)
+async def test_function_tool_errors(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_init_component,
+    execution: str,
+    error: Exception,
+) -> None:
+    """Report failures through HA's exception handling on every execution path."""
+
+    def sync_failing_tool():
+        raise error
+
+    async def async_failing_tool():
+        raise error
+
+    if execution == "async":
+        failing_tool = async_failing_tool
+    else:
+        failing_tool = sync_failing_tool
+        if execution == "callback":
+            failing_tool = callback(failing_tool)
+
+    failing_tool.__name__ = "failing_tool"
+    llm_tools.llm_tool(hass)(failing_tool)
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    if isinstance(error, (HomeAssistantError, vol.Invalid)):
+        with pytest.raises(type(error)) as raised:
+            await api.async_call_tool(
+                llm.ToolInput(tool_name="failing_tool", tool_args={})
+            )
+        assert raised.value is error
+    else:
+        with pytest.raises(
+            HomeAssistantError,
+            match="Error calling failing_tool \\(ValueError\\): Invalid operation",
+        ) as raised:
+            await api.async_call_tool(
+                llm.ToolInput(tool_name="failing_tool", tool_args={})
+            )
+        assert raised.value.__cause__ is error
 
 
 @pytest.mark.parametrize(

@@ -3,6 +3,7 @@
 import pytest
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.llm import LLMContext
 from homeassistant.util.yaml import parse_yaml
 
@@ -36,3 +37,25 @@ async def test_entity_mapping(
         "calendar.events": "Calendar",
         "script.evening": "Evening",
     }
+
+
+@pytest.mark.parametrize(
+    ("script", "message"),
+    [
+        ("delay: '00:00:01'\nsequence: []", 'action should be inside the "sequence"'),
+        ("trigger: []", "Please rewrite without triggers"),
+        (
+            "action: light.turn_on\ntarget:\n  entity_id: light.hidden",
+            "Referencing unknown or unexposed entity light.hidden",
+        ),
+    ],
+)
+async def test_script_validation_error(
+    hass: HomeAssistant, async_call_tool, script: str, message: str
+) -> None:
+    """Expose intentional script validation failures as Home Assistant errors."""
+    hass.states.async_set("light.hidden", "off")
+    async_expose_entity(hass, "conversation", "light.hidden", False)
+
+    with pytest.raises(ServiceValidationError, match=message):
+        await async_call_tool("homeassistant_script", script=script)

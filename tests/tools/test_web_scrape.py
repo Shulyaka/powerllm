@@ -2,6 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+from homeassistant.exceptions import HomeAssistantError
+
 
 async def test_web_scrape_tool(async_call_tool) -> None:
     """Test web scrape tool."""
@@ -31,3 +34,25 @@ async def test_web_scrape_tool(async_call_tool) -> None:
         "title": "Hello, World!",
         "text": "Hello, World!\nThis is a simple HTML page with a greeting message.",
     }
+
+
+@pytest.mark.parametrize("downloaded", [None, MagicMock(data=b"")])
+async def test_web_scrape_download_error(async_call_tool, downloaded) -> None:
+    """Report missing downloads without dereferencing a missing response."""
+    with patch("trafilatura.fetch_response", return_value=downloaded), patch(
+        "trafilatura.extract"
+    ) as extract:
+        with pytest.raises(HomeAssistantError, match="No data downloaded"):
+            await async_call_tool("web_scrape", url="https://example.com")
+
+    extract.assert_not_called()
+
+
+async def test_web_scrape_parse_error(async_call_tool) -> None:
+    """Report failed text extraction through HA's exception handling."""
+    downloaded = MagicMock(data=b"unparsable response")
+    with patch("trafilatura.fetch_response", return_value=downloaded), patch(
+        "trafilatura.extract", return_value=None
+    ):
+        with pytest.raises(HomeAssistantError, match="No data parsed"):
+            await async_call_tool("web_scrape", url="https://example.com")

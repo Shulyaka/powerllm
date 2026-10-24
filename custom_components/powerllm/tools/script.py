@@ -6,6 +6,7 @@ import logging
 import probatio as vol
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.llm import LLMContext, ToolInput
 from homeassistant.helpers.script import Script
@@ -74,14 +75,14 @@ class DynamicScriptTool(PowerLLMTool):
             # check if AI decided to list actions at top level or inside a sequence key
             action = cv.determine_script_action(script)
             if "sequence" in script:
-                raise RuntimeError(
+                raise ServiceValidationError(
                     f'The "{action}" action should be inside the "sequence" list, '
                     "please rewrite the script"
                 )
             sequence = [script]
         except ValueError:
             if "trigger" in script:
-                raise RuntimeError(
+                raise ServiceValidationError(
                     "This is a script, not an automation. "
                     "Please rewrite without triggers."
                 )
@@ -96,7 +97,7 @@ class DynamicScriptTool(PowerLLMTool):
         if self._exposed_only:
             for entity_id in script.referenced_entities:
                 if not async_should_expose(hass, llm_context.assistant, entity_id):
-                    raise RuntimeError(
+                    raise ServiceValidationError(
                         f"Referencing unknown or unexposed entity {entity_id}, please "
                         "rewrite the script"
                     )

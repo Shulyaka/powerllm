@@ -83,6 +83,8 @@ There are two options:
 
   Function tools automatically detect their integration from the original function's module: `custom_components.<domain>` and `homeassistant.components.<domain>` identify the provider. Other module paths default to `powerllm`. This also applies to functions passed directly to `async_register_tool`.
 
+Raise `HomeAssistantError` (or a subclass such as `ServiceValidationError`) to report a failed tool call. Function tools preserve Home Assistant and schema validation exceptions, and wrap other exceptions in `HomeAssistantError` with the original exception as the cause. Returning a dictionary containing an `error` key remains a successful data response.
+
 The tools in this repository use various techniques for demonstration.
 
 ## TODO

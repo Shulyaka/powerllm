@@ -4,6 +4,7 @@ import probatio as vol
 import pytest
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import llm, selector
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
@@ -85,7 +86,7 @@ async def test_http_tool_list(
 
 @pytest.mark.usefixtures("mock_init_component")
 async def test_http_tool(
-    hass: HomeAssistant, hass_client: ClientSessionGenerator
+    hass: HomeAssistant, hass_client: ClientSessionGenerator, freezer
 ) -> None:
     """HTTP state queries retain details and report invalid tools and arguments."""
     hass.states.async_set(
@@ -160,6 +161,43 @@ async def test_http_tool_preserves_payload(
 
     assert response.status == 200
     assert await response.json() == payload
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize(
+    ("error", "error_type", "error_text"),
+    [
+        (
+            ValueError("Invalid operation"),
+            "HomeAssistantError",
+            "Error calling failing_tool (ValueError): Invalid operation",
+        ),
+        (
+            ServiceValidationError("Service rejected"),
+            "ServiceValidationError",
+            "Service rejected",
+        ),
+    ],
+)
+async def test_http_function_tool_error(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    error: Exception,
+    error_type: str,
+    error_text: str,
+) -> None:
+    """Report raised function errors with a failed HTTP response."""
+
+    @llm_tool(hass)
+    @callback
+    def failing_tool():
+        raise error
+
+    client = await hass_client()
+    response = await client.post("/api/powerllm/powerllm/failing_tool")
+
+    assert response.status == 500
+    assert await response.json() == {"error": error_type, "error_text": error_text}
 
 
 @pytest.mark.skipif(not hasattr(llm, "ToolResult"), reason="Requires HA 2026.10")
