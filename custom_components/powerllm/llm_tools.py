@@ -53,6 +53,9 @@ class PowerFunctionTool(PowerLLMTool):
     def __init__(
         self,
         function: Callable,
+        *,
+        title: str | None = None,
+        annotations: llm.ToolAnnotations | None = None,
     ) -> None:
         """Init the class."""
 
@@ -70,6 +73,10 @@ class PowerFunctionTool(PowerLLMTool):
         self.name = self.name.removeprefix("async_")
 
         self.description = inspect.getdoc(function)
+        if title is not None:
+            self.title = title
+        if annotations is not None:
+            self.annotations = annotations
 
         def hint_to_schema(hint: Any) -> Any:
             if isinstance(hint, UnionType) or get_origin(hint) is Union:
@@ -100,14 +107,14 @@ class PowerFunctionTool(PowerLLMTool):
             return hint
 
         schema = {}
-        annotations = get_type_hints(function)
+        type_hints = get_type_hints(function)
         for param in inspect.signature(function).parameters.values():
             if param.name in ("hass", "llm_context"):
                 continue
             if hasattr(llm.LLMContext, param.name):
                 continue
 
-            hint = annotations.get(param.name, Any)
+            hint = type_hints.get(param.name, Any)
 
             schema[
                 (
@@ -159,7 +166,13 @@ class PowerFunctionTool(PowerLLMTool):
 
 
 @callback
-def async_register_tool(hass: HomeAssistant, tool: PowerLLMTool | Callable) -> None:
+def async_register_tool(
+    hass: HomeAssistant,
+    tool: PowerLLMTool | Callable,
+    *,
+    title: str | None = None,
+    annotations: llm.ToolAnnotations | None = None,
+) -> None:
     """Register an LLM tool with PowerLLM integration."""
     tools = hass.data.setdefault(DOMAIN, {})
 
@@ -168,33 +181,41 @@ def async_register_tool(hass: HomeAssistant, tool: PowerLLMTool | Callable) -> N
             raise TypeError("Please base your tool class on powerllm.PowerLLMTool")
         tool = PowerFunctionTool(tool)
 
+    if title is not None:
+        tool.title = title
+    if annotations is not None:
+        tool.annotations = annotations
+
     if tool.name in tools:
         _LOGGER.warning("Overwriting an already registered tool %s", tool.name)
 
     tools[tool.name] = tool
 
 
-HASS_LIST = []
-LLM_TOOL_LIST = []
+HASS_LIST: list[HomeAssistant] = []
+LLM_TOOL_LIST: list[tuple[Callable, str | None, llm.ToolAnnotations | None]] = []
 
 
-def llm_tool(arg: HomeAssistant | Callable) -> Callable:
+def llm_tool(
+    arg: HomeAssistant | Callable | None = None,
+    *,
+    title: str | None = None,
+    annotations: llm.ToolAnnotations | None = None,
+) -> Callable:
     """Register a function as an LLM Tool with decorator."""
 
-    if isinstance(arg, HomeAssistant):
-        hass = arg
+    def _llm_tool(func: Callable) -> Callable:
+        if isinstance(arg, HomeAssistant):
+            async_register_tool(arg, func, title=title, annotations=annotations)
+        else:
+            LLM_TOOL_LIST.append((func, title, annotations))
+            for hass in HASS_LIST:
+                async_register_tool(hass, func, title=title, annotations=annotations)
+        return func
 
-        def _llm_tool(func: Callable) -> Callable:
-            async_register_tool(hass, func)
-            return func
-
+    if arg is None or isinstance(arg, HomeAssistant):
         return _llm_tool
-
-    func = arg
-    LLM_TOOL_LIST.append(func)
-    for hass in HASS_LIST:
-        async_register_tool(hass, func)
-    return func
+    return _llm_tool(arg)
 
 
 def deferred_register_tools(hass: HomeAssistant) -> None:
@@ -203,5 +224,5 @@ def deferred_register_tools(hass: HomeAssistant) -> None:
         return
 
     HASS_LIST.append(hass)
-    for func in LLM_TOOL_LIST:
-        async_register_tool(hass, func)
+    for func, title, tool_annotations in LLM_TOOL_LIST:
+        async_register_tool(hass, func, title=title, annotations=tool_annotations)

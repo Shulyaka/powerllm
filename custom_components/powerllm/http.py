@@ -1,6 +1,7 @@
 """Rest API for Home Assistant."""
 
 import logging
+from dataclasses import asdict
 from http import HTTPStatus
 from typing import Any
 
@@ -181,6 +182,11 @@ def async_llm_tools_json(api: llm.APIInstance) -> list[dict[str, Any]]:
     def format_tool(tool: llm.Tool) -> dict[str, Any]:
         """Format tool specification."""
         tool_spec = {"name": tool.name}
+        if tool.title is not None:
+            tool_spec["title"] = tool.title
+        if tool.integration is not None:
+            tool_spec["integration"] = tool.integration
+        tool_spec["annotations"] = asdict(tool.annotations)
         if tool.description:
             tool_spec["description"] = tool.description
         tool_spec["parameters"] = vol.to_openapi(

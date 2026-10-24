@@ -6,7 +6,7 @@ import probatio as vol
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
+from homeassistant.helpers.llm import LLMContext, ToolAnnotations, ToolInput, ToolResult
 
 from ..const import CONF_MEMORY_PROMPTS
 from ..llm_tools import PowerLLMTool
@@ -18,6 +18,10 @@ class MemoryTool(PowerLLMTool):
     """Tool that allows LLM to remember facts about the user."""
 
     name = "memory"
+    title = "Remember a fact"
+    annotations = ToolAnnotations(
+        read_only=False, destructive=False, idempotent=False, open_world=False
+    )
     description = (
         "Use this tool to remember personal facts about the user that would allow a "
         "more personalized assistance. Call it every time the user tells you anything "

@@ -40,7 +40,7 @@ class MyHandler(logging.Handler):
         self.logs.append(record)
 
 
-@llm_tool
+@llm_tool(title="Execute Python code")
 def python_code_execute(hass: HomeAssistant, source: str):
     """Execute python code in a restricted environment.
 

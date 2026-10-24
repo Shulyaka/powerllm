@@ -8,6 +8,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import llm, selector
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
+from custom_components.powerllm.http import async_llm_tools_json
 from custom_components.powerllm.llm_tools import (
     PowerLLMTool,
     async_register_tool,
@@ -35,6 +36,11 @@ async def test_http_tool_list(
     """Clients can fetch each API separately, with no duplicate control tools."""
     tool = PowerLLMTool()
     tool.name = "selector_tool"
+    tool.title = "Select an entity"
+    tool.integration = "external_provider"
+    tool.annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
     tool.description = "A tool with a Home Assistant selector."
     tool.parameters = vol.Schema(
         {
@@ -59,6 +65,14 @@ async def test_http_tool_list(
     }
     assert tools["selector_tool"] == {
         "name": "selector_tool",
+        "title": "Select an entity",
+        "integration": "external_provider",
+        "annotations": {
+            "read_only": True,
+            "destructive": False,
+            "idempotent": True,
+            "open_world": False,
+        },
         "description": "A tool with a Home Assistant selector.",
         "parameters": {
             "type": "object",
@@ -82,6 +96,73 @@ async def test_http_tool_list(
 
     response = await client.request(method, "/api/powerllm/non-existent")
     assert response.status == 404
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize("method", ["get", "post"])
+async def test_http_tool_default_metadata(
+    hass: HomeAssistant, hass_client: ClientSessionGenerator, method: str
+) -> None:
+    """Keep untitled custom tools and export all conservative annotation defaults."""
+    tool = PowerLLMTool()
+    tool.name = "untitled_tool"
+    async_register_tool(hass, tool)
+    client = await hass_client()
+
+    response = await client.request(method, "/api/powerllm/powerllm")
+
+    assert response.status == 200
+    tools = {tool["name"]: tool for tool in (await response.json())["tools"]}
+    assert tools["untitled_tool"] == {
+        "name": "untitled_tool",
+        "integration": "powerllm",
+        "annotations": {
+            "read_only": False,
+            "destructive": True,
+            "idempotent": False,
+            "open_world": True,
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    }
+
+
+@pytest.mark.usefixtures("mock_init_component")
+async def test_merged_tool_metadata(
+    hass: HomeAssistant, llm_context: llm.LLMContext
+) -> None:
+    """Serialize the original provider metadata after HA namespaces merged tools."""
+    tool = PowerLLMTool()
+    tool.name = "external_tool"
+    tool.title = "External query"
+    tool.integration = "external_provider"
+    tool.annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=True
+    )
+    async_register_tool(hass, tool)
+    api = await llm.async_get_api(hass, ["assist", "powerllm"], llm_context)
+
+    tools = {tool["name"]: tool for tool in async_llm_tools_json(api)}
+
+    assert tools["powerllm__external_tool"] == {
+        "name": "powerllm__external_tool",
+        "title": "External query",
+        "integration": "external_provider",
+        "annotations": {
+            "read_only": True,
+            "destructive": False,
+            "idempotent": True,
+            "open_world": True,
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    }
 
 
 @pytest.mark.usefixtures("mock_init_component")

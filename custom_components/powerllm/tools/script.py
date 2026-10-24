@@ -8,7 +8,7 @@ from homeassistant.components.homeassistant.exposed_entities import async_should
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
+from homeassistant.helpers.llm import LLMContext, ToolAnnotations, ToolInput, ToolResult
 from homeassistant.helpers.script import Script
 from homeassistant.util.yaml import dump, parse_yaml
 
@@ -24,6 +24,10 @@ class DynamicScriptTool(PowerLLMTool):
     """Tool to execute LLM-written scripts."""
 
     name = "homeassistant_script"
+    title = "Run a Home Assistant script"
+    annotations = ToolAnnotations(
+        read_only=False, destructive=True, idempotent=False, open_world=True
+    )
     description = (
         "Execute arbitrary scripts in this Home Assistant instance. Only use this "
         "function if other tools do not provide required functionality or fail."

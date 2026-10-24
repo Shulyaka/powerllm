@@ -85,6 +85,8 @@ There are two options:
 
   Function tools automatically return a native `ToolResult`: dictionary results become its `data` unchanged, while other JSON-compatible results become `data={"result": value}`. A function may return an explicit `ToolResult` to control its data and error flag; that object passes through unchanged.
 
+Set `title` and `annotations = llm.ToolAnnotations(...)` on class tools. Function tools accept the same optional keywords in `llm_tool`, `async_register_tool`, and `llm_tools.PowerFunctionTool`. Use `@llm_tool(title=..., annotations=...)` for deferred registration or `@llm_tool(hass, title=..., annotations=...)` to register immediately; see the [web scraper](custom_components/powerllm/tools/web_scrape.py) for an example. These hints describe a tool's behavior and do not grant or restrict permissions.
+
 Raise `HomeAssistantError` (or a subclass such as `ServiceValidationError`) to report a failed tool call. Function tools preserve Home Assistant and schema validation exceptions, and wrap other exceptions in `HomeAssistantError` with the original exception as the cause. Returning a dictionary containing an `error` key remains a successful data response.
 
 The tools in this repository use various techniques for demonstration.
