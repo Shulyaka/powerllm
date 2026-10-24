@@ -14,6 +14,8 @@ from homeassistant.helpers import (
 from custom_components.powerllm import llm_tools
 from custom_components.powerllm.tools import get_state
 
+from . import tool_result_data
+
 
 def test_format_state(hass: HomeAssistant) -> None:
     """Test foratting of an entity state."""
@@ -173,7 +175,7 @@ async def test_function_tool(
         tool_args={"required_arg": 4},
     )
 
-    response = await api.async_call_tool(tool_input)
+    response = tool_result_data(await api.async_call_tool(tool_input))
 
     assert response == {"result": "test_response"}
     assert call == {
@@ -235,7 +237,7 @@ async def test_async_function_tool(
         tool_args={"required_arg": 4},
     )
 
-    response = await api.async_call_tool(tool_input)
+    response = tool_result_data(await api.async_call_tool(tool_input))
 
     assert response == {"result": "test_response"}
     assert call == {
