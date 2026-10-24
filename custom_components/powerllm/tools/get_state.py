@@ -18,7 +18,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.template.helpers import resolve_area_id
 from homeassistant.util import dt as dt_util
-from homeassistant.util.json import JsonObjectType, JsonValueType
+from homeassistant.util.json import JsonValueType
 
 from ..llm_tools import PowerLLMTool
 
@@ -242,7 +242,7 @@ class GetStateTool(PowerLLMTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> JsonObjectType:
+    ) -> llm.ToolResult:
         """Handle the intent."""
         args = self.parameters(tool_input.tool_args)
         slots = {key: {"value": val} for key, val in args.items()}
@@ -280,7 +280,7 @@ class GetStateTool(PowerLLMTool):
             assistant=llm_context.assistant,
             device_id=llm_context.device_id,
         )
-        return GetStateResponseDict(intent_response, hass)
+        return llm.ToolResult(data=GetStateResponseDict(intent_response, hass))
 
 
 class GetStateResponseDict(dict):

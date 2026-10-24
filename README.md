@@ -20,7 +20,7 @@ Please feel free to raise an issue if you have an idea of another useful tool!
 
 ## Installation
 
-Requires Home Assistant 2026.9 or later.
+Requires Home Assistant 2026.10.0 or later.
 
 1. Copy `custom_components/powerllm` directory from this repository into `custom_components/` directory in your config directory. Optionally use HACS for this step.
 2. Restart Home Assistant
@@ -69,7 +69,7 @@ This is an extension of [Home Assistant REST API](https://developers.home-assist
 
 * POST `/api/powerllm/<api>/<tool_name>`
 
-  Calls the tool and returns its JSON payload directly on all supported Home Assistant versions. Optional parameters: `user_input`, `language`, `device_id`, `tool_args`
+  Calls the tool and returns its `ToolResult.data` JSON object. Optional parameters: `user_input`, `language`, `device_id`, `tool_args`
 
 ## Tools extension by other custom integrations
 
@@ -77,11 +77,13 @@ Other custom integrations can use `Power LLM` to add more tools to extend the fu
 
 There are two options:
 
-* Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example. The class must support deepcopy. Set the class's `integration` attribute to your integration's domain; the base class defaults to `"powerllm"`. Validate arguments with `args = self.parameters(tool_input.tool_args)` at the start of `async_call`, and use the validated values so schema defaults and conversions apply.
+* Extend the `custom_components.powerllm.PowerLLMTool` class to implement the functionality, then call `custom_components.powerllm.async_register_tool` to register the object of the class. See the [memory tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/memory.py) for an example. The class must support deepcopy. Set the class's `integration` attribute to your integration's domain; the base class defaults to `"powerllm"`. Validate arguments with `args = self.parameters(tool_input.tool_args)` at the start of `async_call`, and use the validated values so schema defaults and conversions apply. Return `homeassistant.helpers.llm.ToolResult(data=payload)` with a JSON object as `payload`.
 
 * Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have type annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent ("pytest-style"). All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example. A synchronous function should be declared as `@callback`, or it will be executed in a separate thread than the main hass loop, while an async function will be run concurrently in the main event loop and therefore is not allowed to use any blocking operations. If using both `@llm_tool` and `@callback`, `@llm_tool` should be the outer decorator. Function arguments are validated against the generated parameter schema before execution, including defaults and conversions. Context parameters are injected only after validation and cannot be supplied by the LLM.
 
   Function tools automatically detect their integration from the original function's module: `custom_components.<domain>` and `homeassistant.components.<domain>` identify the provider. Other module paths default to `powerllm`. This also applies to functions passed directly to `async_register_tool`.
+
+  Function tools automatically return a native `ToolResult`: dictionary results become its `data` unchanged, while other JSON-compatible results become `data={"result": value}`. A function may return an explicit `ToolResult` to control its data and error flag; that object passes through unchanged.
 
 Raise `HomeAssistantError` (or a subclass such as `ServiceValidationError`) to report a failed tool call. Function tools preserve Home Assistant and schema validation exceptions, and wrap other exceptions in `HomeAssistantError` with the original exception as the cause. Returning a dictionary containing an `error` key remains a successful data response.
 

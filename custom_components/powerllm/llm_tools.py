@@ -124,7 +124,7 @@ class PowerFunctionTool(PowerLLMTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> Any:
+    ) -> llm.ToolResult:
         """Call the function."""
         kwargs = self.parameters(tool_input.tool_args)
         for parameter in inspect.signature(self.function).parameters.values():
@@ -137,20 +137,25 @@ class PowerFunctionTool(PowerLLMTool):
 
         try:
             if inspect.iscoroutinefunction(self.function):
-                return await self.function(**kwargs)
-
-            if is_callback(self.function) or hass.loop != asyncio.get_running_loop():
-                return self.function(**kwargs)
-
-            return await hass.loop.run_in_executor(
-                None, lambda: self.function(**kwargs)
-            )
+                result = await self.function(**kwargs)
+            elif is_callback(self.function) or hass.loop != asyncio.get_running_loop():
+                result = self.function(**kwargs)
+            else:
+                result = await hass.loop.run_in_executor(
+                    None, lambda: self.function(**kwargs)
+                )
         except (HomeAssistantError, vol.Invalid):
             raise
         except Exception as e:
             raise HomeAssistantError(
                 f"Error calling {self.name} ({type(e).__name__}): {e}"
             ) from e
+
+        if isinstance(result, llm.ToolResult):
+            return result
+        return llm.ToolResult(
+            data=result if isinstance(result, dict) else {"result": result}
+        )
 
 
 @callback

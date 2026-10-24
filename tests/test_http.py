@@ -116,9 +116,6 @@ async def test_http_tool(
     response = await client.post("/api/powerllm/assist/llm__GetDateTime")
     assert response.status == 200
     date_time = await response.json()
-    if not hasattr(llm, "ToolResult"):
-        assert date_time["success"] is True
-        date_time = date_time["result"]
     assert set(date_time) == {"date", "time", "timezone", "weekday"}
     assert all(date_time.values())
 
@@ -138,17 +135,29 @@ async def test_http_tool(
 
 @pytest.mark.usefixtures("mock_init_component")
 @pytest.mark.parametrize(
-    "payload",
+    ("payload", "expected"),
     [
-        {"data": {"value": 42}, "error": False},
-        {"data": {"value": 42}, "error": "Tool-provided error"},
-        [{"title": "Example", "href": "https://example.com"}],
+        (
+            {"data": {"value": 42}, "error": False},
+            {"data": {"value": 42}, "error": False},
+        ),
+        (
+            {"data": {"value": 42}, "error": "Tool-provided error"},
+            {"data": {"value": 42}, "error": "Tool-provided error"},
+        ),
+        (
+            [{"title": "Example", "href": "https://example.com"}],
+            {"result": [{"title": "Example", "href": "https://example.com"}]},
+        ),
+        (42, {"result": 42}),
+        (False, {"result": False}),
+        (None, {"result": None}),
     ],
 )
 async def test_http_tool_preserves_payload(
-    hass: HomeAssistant, hass_client: ClientSessionGenerator, payload
+    hass: HomeAssistant, hass_client: ClientSessionGenerator, payload, expected: dict
 ) -> None:
-    """Preserve lists and dictionaries with keys also used by result containers."""
+    """Keep dictionary data intact and expose normalized non-object results."""
 
     @llm_tool(hass)
     @callback
@@ -160,7 +169,7 @@ async def test_http_tool_preserves_payload(
     response = await client.post("/api/powerllm/powerllm/payload_tool")
 
     assert response.status == 200
-    assert await response.json() == payload
+    assert await response.json() == expected
 
 
 @pytest.mark.usefixtures("mock_init_component")
@@ -200,10 +209,11 @@ async def test_http_function_tool_error(
     assert await response.json() == {"error": error_type, "error_text": error_text}
 
 
-@pytest.mark.skipif(not hasattr(llm, "ToolResult"), reason="Requires HA 2026.10")
 @pytest.mark.usefixtures("mock_init_component")
 @pytest.mark.parametrize("error", [False, True])
-@pytest.mark.parametrize("payload", [{"data": {"value": 42}}, [{"value": 42}]])
+@pytest.mark.parametrize(
+    "payload", [{"data": {"value": 42}}, {"results": [{"value": 42}]}]
+)
 async def test_http_native_tool_result(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
@@ -213,17 +223,19 @@ async def test_http_native_tool_result(
 ) -> None:
     """Keep native result flags for HA callers and the existing HTTP data format."""
 
+    native_result = llm.ToolResult(data=payload, error=error)
+
     @llm_tool(hass)
     @callback
     def native_result_tool():
         """Return a native Home Assistant result container."""
-        return llm.ToolResult(data=payload, error=error)
+        return native_result
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     result = await api.async_call_tool(
         llm.ToolInput(tool_name="native_result_tool", tool_args={})
     )
-    assert isinstance(result, llm.ToolResult)
+    assert result is native_result
     assert result.data == payload
     assert result.error is error
 

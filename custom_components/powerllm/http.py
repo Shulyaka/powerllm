@@ -167,9 +167,7 @@ class LLMToolView(HomeAssistantView):
                 ),
             )
 
-        tool_result_type = getattr(llm, "ToolResult", None)
-        if tool_result_type is not None and isinstance(tool_response, tool_result_type):
-            tool_response = tool_response.data
+        tool_response = tool_response.data
 
         _LOGGER.info("Tool response: %s", tool_response)
 

@@ -8,9 +8,8 @@ from homeassistant.components.homeassistant.exposed_entities import async_should
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput
+from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
 from homeassistant.helpers.script import Script
-from homeassistant.util.json import JsonObjectType
 from homeassistant.util.yaml import dump, parse_yaml
 
 from ..const import DOMAIN
@@ -60,7 +59,7 @@ class DynamicScriptTool(PowerLLMTool):
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
-    ) -> JsonObjectType:
+    ) -> ToolResult:
         """Execute a script in Home Assistant."""
         args = self.parameters(tool_input.tool_args)
         context = llm_context.context
@@ -109,12 +108,14 @@ class DynamicScriptTool(PowerLLMTool):
                     asyncio.create_task(script.async_run(context=context))
                 )
         except TimeoutError:
-            return {
-                "success": True,
-                "message": "The script is scheduled to execute in background",
-            }
+            return ToolResult(
+                data={
+                    "success": True,
+                    "message": "The script is scheduled to execute in background",
+                }
+            )
 
         if result.service_response:
-            return {"service_response": result.service_response}
+            return ToolResult(data={"service_response": result.service_response})
 
-        return {"success": True}
+        return ToolResult(data={"success": True})

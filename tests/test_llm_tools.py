@@ -262,6 +262,90 @@ async def test_async_function_tool(
 
 @pytest.mark.parametrize("execution", ["async", "callback", "executor"])
 @pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, {}),
+        (
+            {"error": True, "data": {"value": 42}},
+            {"error": True, "data": {"value": 42}},
+        ),
+        ({"result": [42]}, {"result": [42]}),
+        ([{"value": 42}], {"result": [{"value": 42}]}),
+        ([], {"result": []}),
+        ("text", {"result": "text"}),
+        (42, {"result": 42}),
+        (1.5, {"result": 1.5}),
+        (False, {"result": False}),
+        (None, {"result": None}),
+    ],
+)
+async def test_function_tool_native_results(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    execution: str,
+    payload,
+    expected: dict,
+) -> None:
+    """Return native objects directly without HA's legacy-result conversion."""
+
+    def sync_value_tool():
+        return payload
+
+    async def async_value_tool():
+        return payload
+
+    if execution == "async":
+        function = async_value_tool
+    else:
+        function = sync_value_tool
+        if execution == "callback":
+            function = callback(function)
+    tool = llm_tools.PowerFunctionTool(function)
+
+    result = await tool.async_call(
+        hass, llm.ToolInput(tool_name=tool.name, tool_args={}), llm_context
+    )
+
+    assert tool_result_data(result) == expected
+    if isinstance(payload, dict):
+        assert result.data is payload
+
+
+@pytest.mark.parametrize("execution", ["async", "callback", "executor"])
+@pytest.mark.parametrize("error", [False, True])
+async def test_function_tool_preserves_native_result(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    execution: str,
+    error: bool,
+) -> None:
+    """Preserve an explicit native result and its error flag on every dispatch."""
+    native_result = llm.ToolResult(data={"value": 42}, error=error)
+
+    def sync_native_tool():
+        return native_result
+
+    async def async_native_tool():
+        return native_result
+
+    if execution == "async":
+        function = async_native_tool
+    else:
+        function = sync_native_tool
+        if execution == "callback":
+            function = callback(function)
+    tool = llm_tools.PowerFunctionTool(function)
+
+    result = await tool.async_call(
+        hass, llm.ToolInput(tool_name=tool.name, tool_args={}), llm_context
+    )
+
+    assert result is native_result
+    assert result.error is error
+
+
+@pytest.mark.parametrize("execution", ["async", "callback", "executor"])
+@pytest.mark.parametrize(
     "error",
     [
         ValueError("Invalid operation"),
