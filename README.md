@@ -69,7 +69,7 @@ This is an extension of [Home Assistant REST API](https://developers.home-assist
 
 * POST `/api/powerllm/<api>/<tool_name>`
 
-  Calls the tool and returns the result. Optional parameters: `user_input`, `language`, `device_id`, `tool_args`
+  Calls the tool and returns its JSON payload directly on all supported Home Assistant versions. Optional parameters: `user_input`, `language`, `device_id`, `tool_args`
 
 ## Tools extension by other custom integrations
 

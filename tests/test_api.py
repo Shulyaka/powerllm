@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.powerllm import llm_tool
 from custom_components.powerllm.const import CONF_MEMORY_PROMPTS, CONF_TOOL_SELECTION
 
+from . import tool_result_data
+
 
 @pytest.mark.usefixtures("mock_init_component")
 async def test_powerllm_tools(hass: HomeAssistant, llm_context: llm.LLMContext) -> None:
@@ -50,17 +52,23 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
     assert "powerllm__HassTurnOn" not in tools
     assert "Static Context:" in api.api_prompt
     assert "Entity IDs for scripts" in api.api_prompt
-    assert await api.async_call_tool(
+    result = await api.async_call_tool(
         llm.ToolInput(tool_name="powerllm__echo", tool_args={"value": "works"})
-    ) == {"value": "works"}
-    assert (
-        await api.async_call_tool(
-            llm.ToolInput(tool_name="assist__llm__GetDateTime", tool_args={})
-        )
-    )["success"] is True
+    )
+    assert tool_result_data(result) == {"value": "works"}
+    result = await api.async_call_tool(
+        llm.ToolInput(tool_name="assist__llm__GetDateTime", tool_args={})
+    )
+    date_time = tool_result_data(result)
+    if not hasattr(llm, "ToolResult"):
+        assert date_time["success"] is True
+        date_time = date_time["result"]
+    assert set(date_time) == {"date", "time", "timezone", "weekday"}
+    assert all(date_time.values())
     result = await api.async_call_tool(
         llm.ToolInput(tool_name="powerllm__HassGetState", tool_args={"name": "Kitchen"})
     )
+    result = tool_result_data(result)
     assert result["data"]["matched_states"][0]["entity_id"] == "light.kitchen"
 
 

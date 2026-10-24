@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm import DOMAIN
 
+from . import tool_result_data
 from .const import MOCK_CONFIG, MOCK_OPTIONS_CONFIG
 
 
@@ -19,6 +20,13 @@ from .const import MOCK_CONFIG, MOCK_OPTIONS_CONFIG
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations."""
     yield
+
+
+@pytest.fixture(autouse=True)
+def mock_search_client():
+    """Keep unrelated integration tests independent of external search clients."""
+    with patch("custom_components.powerllm.tools.duckduckgo.DDGS"):
+        yield
 
 
 # This fixture is used to prevent HomeAssistant from attempting to create and dismiss
@@ -89,6 +97,6 @@ async def async_call_tool(
             tool_args=kwargs,
         )
 
-        return await api.async_call_tool(tool_input)
+        return tool_result_data(await api.async_call_tool(tool_input))
 
     return _call_tool

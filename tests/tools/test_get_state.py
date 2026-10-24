@@ -17,6 +17,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.powerllm.tools.get_state import GetStateTool
 
+from tests import tool_result_data
+
 
 async def test_get_state_context(
     hass: HomeAssistant,
@@ -52,7 +54,7 @@ async def test_get_state_context(
     with patch(
         "homeassistant.helpers.intent.async_handle", return_value=intent_response
     ) as mock_intent_handle:
-        response = await api.async_call_tool(tool_input)
+        response = tool_result_data(await api.async_call_tool(tool_input))
 
     mock_intent_handle.assert_awaited_once_with(
         hass=hass,
@@ -126,7 +128,7 @@ async def test_get_state_context(
     with patch(
         "homeassistant.helpers.intent.async_handle", return_value=intent_response
     ) as mock_intent_handle:
-        response = await api.async_call_tool(tool_input)
+        response = tool_result_data(await api.async_call_tool(tool_input))
 
     mock_intent_handle.assert_awaited_once_with(
         hass=hass,
@@ -204,6 +206,7 @@ async def test_get_state_filters(
             tool_name="HassGetState", tool_args={"domain": "light", "state": "on"}
         )
     )
+    result = tool_result_data(result)
     assert result["response_type"] == "query_answer"
     assert result["data"]["matched_states"] == [
         {
