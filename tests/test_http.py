@@ -1,10 +1,12 @@
 """Tests for LLM Tools HTTP API."""
 
+from unittest.mock import patch
+
 import probatio as vol
 import pytest
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import ServiceValidationError, Unauthorized, UnknownUser
 from homeassistant.helpers import llm, selector
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
@@ -325,3 +327,78 @@ async def test_http_native_tool_result(
 
     assert response.status == 200
     assert await response.json() == payload
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/powerllm/powerllm"),
+        ("post", "/api/powerllm/powerllm"),
+        ("post", "/api/powerllm/powerllm/private_tool"),
+    ],
+)
+@pytest.mark.parametrize("error_type", [Unauthorized, UnknownUser])
+async def test_http_api_permission_error(
+    hass_client: ClientSessionGenerator, method: str, path: str, error_type
+) -> None:
+    """Return forbidden when API access fails, preserving each response format."""
+    error = error_type()
+    client = await hass_client()
+    with patch("custom_components.powerllm.http.llm.async_get_api", side_effect=error):
+        response = await client.request(method, path)
+
+    assert response.status == 403
+    if path.endswith("/private_tool"):
+        assert await response.json() == {
+            "error": error_type.__name__,
+            "error_text": str(error),
+        }
+    else:
+        assert await response.json() == {"message": str(error)}
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize("error_type", [Unauthorized, UnknownUser])
+async def test_http_function_permission_error(
+    hass: HomeAssistant, hass_client: ClientSessionGenerator, error_type
+) -> None:
+    """Keep permission exceptions raised by registered functions as forbidden."""
+
+    @llm_tool(hass)
+    @callback
+    def private_tool():
+        raise error_type()
+
+    client = await hass_client()
+    response = await client.post("/api/powerllm/powerllm/private_tool")
+
+    assert response.status == 403
+    assert await response.json() == {
+        "error": error_type.__name__,
+        "error_text": error_type.__name__,
+    }
+
+
+@pytest.mark.usefixtures("mock_init_component")
+async def test_http_permission_error_before_not_found(
+    hass: HomeAssistant, hass_client: ClientSessionGenerator
+) -> None:
+    """Use exception type before interpreting the text of a permission failure."""
+
+    class MissingPrivateResource(Unauthorized):
+        """Permission failure whose message resembles a missing API."""
+
+        def __str__(self) -> str:
+            return "Private resource not found"
+
+    @llm_tool(hass)
+    @callback
+    def private_tool():
+        raise MissingPrivateResource()
+
+    client = await hass_client()
+    response = await client.post("/api/powerllm/powerllm/private_tool")
+
+    assert response.status == 403
+    assert (await response.json())["error_text"] == "Private resource not found"
