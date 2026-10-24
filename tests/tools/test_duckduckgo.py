@@ -8,7 +8,7 @@ import pytest
 from ddgs.exceptions import DDGSException
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.llm import LLMContext, ToolInput
+from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
 from primp import BuilderError
 
 from custom_components.powerllm.tools.duckduckgo import DDGNewsTool, DDGTextSearchTool
@@ -75,7 +75,9 @@ async def test_search(
     getattr(client, method).assert_called_once_with(
         "Home Assistant", region="us-en", max_results=3, backend="duckduckgo"
     )
-    assert response == (results or {"error": "No results returned"})
+    assert isinstance(response, ToolResult)
+    assert response.error is False
+    assert response.data == {"results": results}
 
 
 @pytest.mark.parametrize(("tool_type", "method", "query_arg"), SEARCH_TOOLS)

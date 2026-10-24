@@ -79,9 +79,6 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
         llm.ToolInput(tool_name="assist__llm__GetDateTime", tool_args={})
     )
     date_time = tool_result_data(result)
-    if not hasattr(llm, "ToolResult"):
-        assert date_time["success"] is True
-        date_time = date_time["result"]
     assert set(date_time) == {"date", "time", "timezone", "weekday"}
     assert all(date_time.values())
     result = await api.async_call_tool(
@@ -89,6 +86,43 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
     )
     result = tool_result_data(result)
     assert result["data"]["matched_states"][0]["entity_id"] == "light.kitchen"
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize(
+    ("tool_name", "args"),
+    [
+        ("homeassistant_script", {"script": "event: powerllm_test"}),
+        ("memory", {"text": "New fact"}),
+    ],
+)
+async def test_write_tools_return_native_results(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_config_entry: MockConfigEntry,
+    tool_name: str,
+    args: dict,
+) -> None:
+    """Return native success data after script execution or a memory update."""
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            **mock_config_entry.options,
+            CONF_MEMORY_PROMPTS: {"User": {"12345": "Existing fact"}},
+        },
+    )
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+    tool = next(tool for tool in api.tools if tool.name == tool_name)
+
+    result = await tool.async_call(
+        hass, llm.ToolInput(tool_name=tool_name, tool_args=args), llm_context
+    )
+
+    assert tool_result_data(result) == {"success": True}
+    if tool_name == "memory":
+        assert mock_config_entry.options[CONF_MEMORY_PROMPTS] == {
+            "User": {"12345": "Existing fact\nNew fact"}
+        }
 
 
 @pytest.mark.usefixtures("mock_init_component")

@@ -185,7 +185,7 @@ async def test_search_uses_schema_defaults_and_conversions(
         max_results=expected_count,
         backend="duckduckgo",
     )
-    assert tool_result_data(result) == [{"title": "Example"}]
+    assert tool_result_data(result) == {"results": [{"title": "Example"}]}
     assert tool_input.tool_args == {query_arg: "Home Assistant", **extra_args}
 
 

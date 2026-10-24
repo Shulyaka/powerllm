@@ -6,8 +6,7 @@ import probatio as vol
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput
-from homeassistant.util.json import JsonObjectType
+from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
 
 from ..const import CONF_MEMORY_PROMPTS
 from ..llm_tools import PowerLLMTool
@@ -63,7 +62,7 @@ class MemoryTool(PowerLLMTool):
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
-    ) -> JsonObjectType:
+    ) -> ToolResult:
         """Save a memory item."""
         args = self.parameters(tool_input.tool_args)
 
@@ -97,4 +96,4 @@ class MemoryTool(PowerLLMTool):
         )
         hass.config_entries.async_update_entry(self._config_entry, options=options)
 
-        return {"success": True}
+        return ToolResult(data={"success": True})

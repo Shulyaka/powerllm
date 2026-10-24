@@ -5,10 +5,9 @@ from typing import Any
 from homeassistant.helpers import llm
 
 
-def tool_result_data(result: Any) -> Any:
-    """Validate successful API results and return their JSON data across versions."""
-    if tool_result_type := getattr(llm, "ToolResult", None):
-        assert isinstance(result, tool_result_type)
-        assert result.error is False
-        return result.data
-    return result
+def tool_result_data(result: llm.ToolResult) -> dict[str, Any]:
+    """Validate a successful native result and return its JSON object."""
+    assert isinstance(result, llm.ToolResult)
+    assert result.error is False
+    assert isinstance(result.data, dict)
+    return result.data

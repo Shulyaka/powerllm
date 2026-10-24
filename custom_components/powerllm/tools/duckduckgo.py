@@ -8,8 +8,7 @@ from ddgs.exceptions import DDGSException
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput
-from homeassistant.util.json import JsonObjectType
+from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
 from primp import PrimpError
 
 from ..llm_tools import PowerLLMTool
@@ -45,20 +44,21 @@ class DDGTextSearchTool(DDGBaseTool):
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
-    ) -> JsonObjectType:
+    ) -> ToolResult:
         """Execute text search."""
         args = self.parameters(tool_input.tool_args)
         try:
-            return await hass.async_add_executor_job(
+            results = await hass.async_add_executor_job(
                 lambda: DDGS().text(
                     args["query"],
                     region=self._region,
                     max_results=args["max_results"],
                     backend="duckduckgo",
                 ),
-            ) or {"error": "No results returned"}
+            )
         except (DDGSException, PrimpError) as e:
             raise HomeAssistantError(str(e)) from e
+        return ToolResult(data={"results": results or []})
 
 
 class DDGNewsTool(DDGBaseTool):
@@ -77,17 +77,18 @@ class DDGNewsTool(DDGBaseTool):
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
-    ) -> JsonObjectType:
+    ) -> ToolResult:
         """Execute news search."""
         args = self.parameters(tool_input.tool_args)
         try:
-            return await hass.async_add_executor_job(
+            results = await hass.async_add_executor_job(
                 lambda: DDGS().news(
                     args["keywords"],
                     region=self._region,
                     max_results=args["max_results"],
                     backend="duckduckgo",
                 ),
-            ) or {"error": "No results returned"}
+            )
         except (DDGSException, PrimpError) as e:
             raise HomeAssistantError(str(e)) from e
+        return ToolResult(data={"results": results or []})

@@ -29,6 +29,17 @@ def mock_search_client():
         yield
 
 
+@pytest.fixture(autouse=True)
+def assert_native_tool_results(caplog: pytest.LogCaptureFixture):
+    """Reject calls that rely on HA's deprecated raw-result conversion."""
+    yield
+    assert not any(
+        "returns a JSON object from a tool" in record.message
+        for phase in ("setup", "call")
+        for record in caplog.get_records(phase)
+    )
+
+
 # This fixture is used to prevent HomeAssistant from attempting to create and dismiss
 # persistent notifications. These calls would fail without this fixture since the
 # persistent_notification integration is never loaded during a test.
