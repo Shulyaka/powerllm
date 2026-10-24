@@ -6,10 +6,10 @@ import logging
 import probatio as vol
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.llm import LLMContext, ToolAnnotations, ToolInput, ToolResult
-from homeassistant.helpers.script import Script
+from homeassistant.helpers.script import Script, async_validate_actions_config
 from homeassistant.util.yaml import dump, parse_yaml
 
 from ..const import DOMAIN
@@ -69,28 +69,44 @@ class DynamicScriptTool(PowerLLMTool):
         context = llm_context.context
         script = args["script"]
 
-        if isinstance(script, str):
-            script = parse_yaml(script)
-
-        if isinstance(script, list) and len(script) == 1:
-            script = script[0]
-
         try:
-            # check if AI decided to list actions at top level or inside a sequence key
-            action = cv.determine_script_action(script)
-            if "sequence" in script:
-                raise ServiceValidationError(
-                    f'The "{action}" action should be inside the "sequence" list, '
-                    "please rewrite the script"
-                )
-            sequence = [script]
-        except ValueError:
-            if "trigger" in script:
+            if isinstance(script, str):
+                script = parse_yaml(script)
+            else:
+                parsed_actions = [parse_yaml(action) for action in script]
+                script = [
+                    item
+                    for action in parsed_actions
+                    for item in (action if isinstance(action, list) else [action])
+                ]
+        except HomeAssistantError as err:
+            raise ServiceValidationError(f"Invalid script YAML: {err}") from err
+
+        if not isinstance(script, (dict, list)):
+            raise ServiceValidationError(
+                "Script must be an action or a list of actions"
+            )
+        if isinstance(script, dict):
+            if "trigger" in script or "triggers" in script:
                 raise ServiceValidationError(
                     "This is a script, not an automation. "
                     "Please rewrite without triggers."
                 )
-            sequence = script["sequence"]
+            if "sequence" in script:
+                action = cv.determine_script_action(script)
+                if action != cv.SCRIPT_ACTION_SEQUENCE:
+                    raise ServiceValidationError(
+                        f'The "{action}" action should be inside the "sequence" list, '
+                        "please rewrite the script"
+                    )
+                if set(script) == {"sequence"}:
+                    script = script["sequence"]
+
+        try:
+            sequence = cv.SCRIPT_SCHEMA(script)
+            sequence = await async_validate_actions_config(hass, sequence)
+        except vol.Invalid as err:
+            raise ServiceValidationError(f"Invalid script: {err}") from err
 
         _LOGGER.debug("Parsed sequence: %s", sequence)
 
@@ -119,7 +135,7 @@ class DynamicScriptTool(PowerLLMTool):
                 }
             )
 
-        if result.service_response:
+        if result is not None and result.service_response:
             return ToolResult(data={"service_response": result.service_response})
 
         return ToolResult(data={"success": True})
