@@ -72,6 +72,17 @@ async def mock_init_component(hass, mock_config_entry):
     await hass.async_block_till_done()
 
 
+@pytest.fixture(params=[None, "Device control"], ids=["native-name", "renamed-api"])
+def assist_api(
+    hass: HomeAssistant, mock_init_component, monkeypatch: pytest.MonkeyPatch, request
+) -> llm.API:
+    """Exercise the registered Assist API with its current and a renamed label."""
+    api = next(api for api in llm.async_get_apis(hass) if api.id == "assist")
+    if request.param is not None:
+        monkeypatch.setattr(api, "name", request.param)
+    return api
+
+
 @pytest.fixture(autouse=True)
 async def setup_ha(hass: HomeAssistant) -> None:
     """Set up Home Assistant."""

@@ -17,13 +17,15 @@ from custom_components.powerllm.llm_tools import (
 
 
 @pytest.mark.usefixtures("mock_init_component")
-async def test_http_api_list(hass_client: ClientSessionGenerator) -> None:
+async def test_http_api_list(
+    hass_client: ClientSessionGenerator, assist_api: llm.API
+) -> None:
     """Both API owners remain available through HTTP."""
     client = await hass_client()
     response = await client.get("/api/powerllm")
     assert response.status == 200
     assert await response.json() == [
-        {"name": "Assist", "id": "assist"},
+        {"name": assist_api.name, "id": "assist"},
         {"name": "PowerLLM", "id": "powerllm"},
     ]
 
