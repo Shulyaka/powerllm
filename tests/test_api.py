@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+import slugify as unicode_slug
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import intent, llm
@@ -96,7 +97,9 @@ async def test_powerllm_tools(
 
 
 @pytest.mark.usefixtures("mock_init_component")
-async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> None:
+async def test_merged_api(
+    hass: HomeAssistant, llm_context: llm.LLMContext, assist_api: llm.API
+) -> None:
     """Selecting both APIs merges prompts and dispatches tools to their owner."""
     hass.states.async_set("light.kitchen", "on", {"friendly_name": "Kitchen"})
     async_expose_entity(hass, "conversation", "light.kitchen", True)
@@ -109,8 +112,9 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
 
     api = await llm.async_get_api(hass, ["assist", "powerllm"], llm_context)
     tools = {tool.name for tool in api.tools}
-    assert "assist__intent__HassTurnOn" in tools
-    assert "assist__llm__GetDateTime" in tools
+    assist_namespace = unicode_slug.slugify(assist_api.name)
+    assert f"{assist_namespace}__intent__HassTurnOn" in tools
+    assert f"{assist_namespace}__llm__GetDateTime" in tools
     assert "powerllm__HassGetState" in tools
     assert "powerllm__HassTurnOn" not in tools
     powerllm_api = await llm.async_get_api(hass, "powerllm", llm_context)
@@ -127,7 +131,7 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
     )
     assert tool_result_data(result) == {"value": "works"}
     result = await api.async_call_tool(
-        llm.ToolInput(tool_name="assist__llm__GetDateTime", tool_args={})
+        llm.ToolInput(tool_name=f"{assist_namespace}__llm__GetDateTime", tool_args={})
     )
     date_time = tool_result_data(result)
     assert set(date_time) == {"date", "time", "timezone", "weekday"}
