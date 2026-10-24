@@ -6,6 +6,7 @@ import logging
 import trafilatura
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import llm
 
 from ..llm_tools import llm_tool
 
@@ -30,7 +31,13 @@ REMOVE_KEYS = {
 def setup(hass: HomeAssistant):
     """Register the tool on integration startup."""
 
-    @llm_tool(hass)
+    @llm_tool(
+        hass,
+        title="Read a web page",
+        annotations=llm.ToolAnnotations(
+            read_only=True, destructive=False, idempotent=True, open_world=True
+        ),
+    )
     def web_scrape(url: str):
         """Get text from a web page.
 

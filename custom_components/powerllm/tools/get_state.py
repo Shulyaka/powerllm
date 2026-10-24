@@ -221,6 +221,10 @@ class GetStateTool(PowerLLMTool):
     """Query matching entities and return their detailed states."""
 
     name = intent.INTENT_GET_STATE
+    title = "Get entity states"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
     description = (
         "Gets or checks the state of a device or entity. Use it to get a list of "
         "devices matching criteria or additional details and attributes, including "

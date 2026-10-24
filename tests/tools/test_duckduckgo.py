@@ -8,9 +8,10 @@ import pytest
 from ddgs.exceptions import DDGSException
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
+from homeassistant.helpers.llm import LLMContext, ToolAnnotations, ToolInput, ToolResult
 from primp import BuilderError
 
+from custom_components.powerllm.llm_tools import async_register_tool
 from custom_components.powerllm.tools.duckduckgo import DDGNewsTool, DDGTextSearchTool
 
 SEARCH_TOOLS = [
@@ -20,18 +21,27 @@ SEARCH_TOOLS = [
 
 
 @pytest.mark.parametrize("tool_type", [DDGTextSearchTool, DDGNewsTool])
-async def test_tool_metadata_without_client(tool_type) -> None:
-    """Construct and copy tools without initializing an HTTP client."""
+async def test_tool_metadata_without_client(hass: HomeAssistant, tool_type) -> None:
+    """Preserve registered metadata when copying tools without an HTTP client."""
+    annotations = ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
     with patch(
         "custom_components.powerllm.tools.duckduckgo.DDGS",
         side_effect=BuilderError('Invalid impersonate: "chrome_109"'),
     ) as mock_ddgs:
         tool = tool_type("us-en")
+        async_register_tool(hass, tool, title="Custom search", annotations=annotations)
+        tool.integration = "custom_provider"
         copied = deepcopy(tool)
 
     mock_ddgs.assert_not_called()
     assert copied is not tool
     assert copied.name == tool.name
+    assert copied.title == "Custom search"
+    assert copied.annotations == annotations
+    assert copied.integration == "custom_provider"
+    assert copied._region == "us-en"
 
 
 @pytest.mark.parametrize(("tool_type", "method", "query_arg"), SEARCH_TOOLS)

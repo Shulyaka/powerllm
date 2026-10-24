@@ -35,6 +35,50 @@ async def test_powerllm_tools(
     intent.async_register(hass, CustomIntent())
     tools = PowerLLMAPI(hass, mock_config_entry)._async_get_tools(llm_context)
     assert all(tool.integration == DOMAIN for tool in tools)
+    expected_metadata = {
+        "HassGetState": (
+            "Get entity states",
+            llm.ToolAnnotations(
+                read_only=True, destructive=False, idempotent=True, open_world=False
+            ),
+        ),
+        "websearch": (
+            "Search the web",
+            llm.ToolAnnotations(
+                read_only=True, destructive=False, idempotent=True, open_world=True
+            ),
+        ),
+        "news": (
+            "Search news",
+            llm.ToolAnnotations(
+                read_only=True, destructive=False, idempotent=True, open_world=True
+            ),
+        ),
+        "memory": (
+            "Remember a fact",
+            llm.ToolAnnotations(
+                read_only=False, destructive=False, idempotent=False, open_world=False
+            ),
+        ),
+        "homeassistant_script": (
+            "Run a Home Assistant script",
+            llm.ToolAnnotations(
+                read_only=False, destructive=True, idempotent=False, open_world=True
+            ),
+        ),
+        "python_code_execute": ("Execute Python code", llm.ToolAnnotations()),
+        "web_scrape": (
+            "Read a web page",
+            llm.ToolAnnotations(
+                read_only=True, destructive=False, idempotent=True, open_world=True
+            ),
+        ),
+    }
+    assert {
+        tool.name: (tool.title, tool.annotations)
+        for tool in tools
+        if tool.name in expected_metadata
+    } == expected_metadata
 
     api = await llm.async_get_api(hass, "powerllm", llm_context)
     assert {tool.name for tool in api.tools} == {
@@ -69,6 +113,13 @@ async def test_merged_api(hass: HomeAssistant, llm_context: llm.LLMContext) -> N
     assert "assist__llm__GetDateTime" in tools
     assert "powerllm__HassGetState" in tools
     assert "powerllm__HassTurnOn" not in tools
+    powerllm_api = await llm.async_get_api(hass, "powerllm", llm_context)
+    merged_tools = {tool.name: tool for tool in api.tools}
+    for tool in powerllm_api.tools:
+        merged_tool = merged_tools[f"powerllm__{tool.name}"]
+        assert merged_tool.title == tool.title
+        assert merged_tool.annotations == tool.annotations
+        assert merged_tool.integration == tool.integration
     assert "Static Context:" in api.api_prompt
     assert "Entity IDs for scripts" in api.api_prompt
     result = await api.async_call_tool(

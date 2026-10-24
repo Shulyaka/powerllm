@@ -8,7 +8,7 @@ from ddgs.exceptions import DDGSException
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.llm import LLMContext, ToolInput, ToolResult
+from homeassistant.helpers.llm import LLMContext, ToolAnnotations, ToolInput, ToolResult
 from primp import PrimpError
 
 from ..llm_tools import PowerLLMTool
@@ -23,15 +23,15 @@ class DDGBaseTool(PowerLLMTool):
         """Initialize the tool."""
         self._region = region
 
-    def __deepcopy__(self, memo):
-        """Implement deepcopy support for conversaton trace as_dict."""
-        return type(self)(self._region)
-
 
 class DDGTextSearchTool(DDGBaseTool):
     """DuckDuckGo text search tool."""
 
     name = "websearch"
+    title = "Search the web"
+    annotations = ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=True
+    )
     description = "Search the internet. Use this tool to access up-to-date data"
     parameters = vol.Schema(
         {
@@ -65,6 +65,10 @@ class DDGNewsTool(DDGBaseTool):
     """DuckDuckGo news tool."""
 
     name = "news"
+    title = "Search news"
+    annotations = ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=True
+    )
     description = "Get the latest news from the internet"
     parameters = vol.Schema(
         {
