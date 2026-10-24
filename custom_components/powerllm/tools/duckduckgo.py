@@ -47,12 +47,13 @@ class DDGTextSearchTool(DDGBaseTool):
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
     ) -> JsonObjectType:
         """Execute text search."""
+        args = self.parameters(tool_input.tool_args)
         try:
             return await hass.async_add_executor_job(
                 lambda: DDGS().text(
-                    tool_input.tool_args["query"],
+                    args["query"],
                     region=self._region,
-                    max_results=tool_input.tool_args.get("max_results"),
+                    max_results=args["max_results"],
                     backend="duckduckgo",
                 ),
             ) or {"error": "No results returned"}
@@ -78,12 +79,13 @@ class DDGNewsTool(DDGBaseTool):
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
     ) -> JsonObjectType:
         """Execute news search."""
+        args = self.parameters(tool_input.tool_args)
         try:
             return await hass.async_add_executor_job(
                 lambda: DDGS().news(
-                    tool_input.tool_args["keywords"],
+                    args["keywords"],
                     region=self._region,
-                    max_results=tool_input.tool_args.get("max_results"),
+                    max_results=args["max_results"],
                     backend="duckduckgo",
                 ),
             ) or {"error": "No results returned"}
