@@ -81,6 +81,8 @@ There are two options:
 
 * Use the `custom_components.powerllm.llm_tool` decorator for any python function. The function is recommended to have type annotations for all parameters. If a parameter name is "hass", "llm_context", or any of the `homeassistant.helpers.llm.LLMContext` attributes, then the value for that parameter will be provided by the conversation agent ("pytest-style"). All other arguments will be provided by the LLM. Refer to the [python code tool](https://github.com/Shulyaka/powerllm/blob/master/custom_components/powerllm/tools/python_code.py) as an example. A synchronous function should be declared as `@callback`, or it will be executed in a separate thread than the main hass loop, while an async function will be run concurrently in the main event loop and therefore is not allowed to use any blocking operations. If using both `@llm_tool` and `@callback`, `@llm_tool` should be the outer decorator.
 
+  Function tools automatically detect their integration from the original function's module: `custom_components.<domain>` and `homeassistant.components.<domain>` identify the provider. Other module paths default to `powerllm`. This also applies to functions passed directly to `async_register_tool`.
+
 The tools in this repository use various techniques for demonstration.
 
 ## TODO

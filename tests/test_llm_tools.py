@@ -1,5 +1,7 @@
 """Test powerllm config flow."""
 
+from functools import wraps
+
 import probatio as vol
 import pytest
 from homeassistant.const import ATTR_FRIENDLY_NAME
@@ -251,6 +253,117 @@ async def test_async_function_tool(
         "platform": "test_platform",
         "required_arg": 4,
     }
+
+
+@pytest.mark.parametrize(
+    ("module", "integration"),
+    [
+        ("custom_components.external_provider", "external_provider"),
+        ("custom_components.external_provider.tools", "external_provider"),
+        ("homeassistant.components.core_provider", "core_provider"),
+        ("homeassistant.components.core_provider.tools", "core_provider"),
+        ("custom_components.powerllm.tools.python_code", DOMAIN),
+        ("tests.test_llm_tools", DOMAIN),
+        ("some_package.tools", DOMAIN),
+        ("custom_components_extra.provider", DOMAIN),
+        ("homeassistant.components_extra.provider", DOMAIN),
+        ("custom_components.", DOMAIN),
+        ("homeassistant.components.", DOMAIN),
+        (None, DOMAIN),
+    ],
+)
+def test_function_tool_integration_module(module: str | None, integration: str) -> None:
+    """Infer an integration domain only from recognized integration modules."""
+
+    def module_tool():
+        """Return data from an integration tool."""
+        return {}
+
+    module_tool.__module__ = module
+    tool = llm_tools.PowerFunctionTool(module_tool)
+
+    assert tool.integration == integration
+
+
+@pytest.mark.parametrize("registration", ["direct", "immediate", "deferred"])
+async def test_function_tool_integration_registration(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_init_component,
+    monkeypatch: pytest.MonkeyPatch,
+    registration: str,
+) -> None:
+    """Preserve inferred attribution through each function registration path."""
+    monkeypatch.setattr(llm_tools, "HASS_LIST", [])
+    monkeypatch.setattr(llm_tools, "LLM_TOOL_LIST", [])
+
+    def external_function_tool():
+        """Return data from another integration."""
+        return {}
+
+    external_function_tool.__module__ = "custom_components.external_provider.tools"
+    if registration == "direct":
+        llm_tools.async_register_tool(hass, external_function_tool)
+    elif registration == "immediate":
+        assert (
+            llm_tools.llm_tool(hass)(external_function_tool) is external_function_tool
+        )
+    else:
+        assert llm_tools.llm_tool(external_function_tool) is external_function_tool
+        assert "external_function_tool" not in hass.data[DOMAIN]
+        llm_tools.deferred_register_tools(hass)
+
+    tool = hass.data[DOMAIN]["external_function_tool"]
+    assert tool.function is external_function_tool
+    assert tool.integration == "external_provider"
+
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+    registered = next(
+        tool for tool in api.tools if tool.name == "external_function_tool"
+    )
+    assert registered is tool
+    assert registered.integration == "external_provider"
+
+
+def test_function_tool_integration_wrapped_function() -> None:
+    """Attribute decorated functions to the original integration implementation."""
+
+    def original_tool():
+        """Return data from the original integration."""
+        return {}
+
+    original_tool.__module__ = "custom_components.original_provider.tools"
+
+    @wraps(original_tool)
+    def wrapped_tool():
+        return original_tool()
+
+    wrapped_tool.__module__ = "custom_components.wrapper_provider.helpers"
+    tool = llm_tools.PowerFunctionTool(wrapped_tool)
+
+    assert tool.function is wrapped_tool
+    assert tool.integration == "original_provider"
+
+
+def test_function_tool_integration_override(hass: HomeAssistant) -> None:
+    """Preserve an explicit function-wrapper provider during registration."""
+
+    class ExplicitFunctionTool(llm_tools.PowerFunctionTool):
+        """Function wrapper supplied by an explicitly identified provider."""
+
+        integration = "explicit_provider"
+
+    def overridden_function_tool():
+        """Return data from a function with a different inferred provider."""
+        return {}
+
+    overridden_function_tool.__module__ = "custom_components.detected_provider.tools"
+    tool = ExplicitFunctionTool(overridden_function_tool)
+    assert tool.integration == "explicit_provider"
+
+    llm_tools.async_register_tool(hass, tool)
+    assert hass.data[DOMAIN]["overridden_function_tool"] is tool
+    assert tool.integration == "explicit_provider"
 
 
 @pytest.mark.parametrize("instance_integration", [None, "instance_provider"])
