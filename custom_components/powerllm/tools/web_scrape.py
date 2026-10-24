@@ -5,6 +5,7 @@ import logging
 
 import trafilatura
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from ..llm_tools import llm_tool
 
@@ -48,12 +49,11 @@ def setup(hass: HomeAssistant):
                 favor_recall=True,
                 with_metadata=True,
             )
-            if parsed:
-                result = json.loads(parsed)
-            else:
-                result = {"error": "No data parsed."}
+            if not parsed:
+                raise HomeAssistantError("No data parsed.")
+            result = json.loads(parsed)
         else:
-            result = {"error": "No data downloaded."}
+            raise HomeAssistantError("No data downloaded.")
 
         result = {k: v for k, v in result.items() if v and k not in REMOVE_KEYS}
 

@@ -55,11 +55,8 @@ def python_code_execute(hass: HomeAssistant, source: str):
     try:
         printed = []
         output = execute(hass, source, printed)
-    except HomeAssistantError as e:
-        output = {"error": type(e).__name__}
-        if str(e):
-            output["error_text"] = str(e)
-    logger.removeHandler(log_handler)
+    finally:
+        logger.removeHandler(log_handler)
 
     result = {"output": output}
     if printed:

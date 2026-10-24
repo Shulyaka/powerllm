@@ -1,5 +1,10 @@
 """Test python script tool."""
 
+import logging
+
+import pytest
+from homeassistant.exceptions import HomeAssistantError
+
 
 async def test_python_script_tool(async_call_tool) -> None:
     """Test python script tool."""
@@ -41,3 +46,24 @@ test2()
     response = await async_call_tool("python_code_execute", source=source)
 
     assert response == {"printed": "test1\ntest2\n"}
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    [
+        ("output[", "Compile error"),
+        ("output['result'] = 1 / 0", "ZeroDivisionError"),
+        ("hass.async_stop()", "Not allowed to access async methods"),
+    ],
+)
+async def test_python_script_tool_error(
+    async_call_tool, source: str, message: str
+) -> None:
+    """Propagate script failures and always remove the temporary log handler."""
+    logger = logging.getLogger("custom_components.powerllm.tools.python_code.script")
+    handlers = logger.handlers.copy()
+
+    with pytest.raises(HomeAssistantError, match=message):
+        await async_call_tool("python_code_execute", source=source)
+
+    assert logger.handlers == handlers

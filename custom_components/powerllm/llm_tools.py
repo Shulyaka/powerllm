@@ -11,6 +11,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 import probatio as vol
 from homeassistant.core import HomeAssistant, callback, is_callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 
 from .const import DOMAIN
@@ -144,8 +145,12 @@ class PowerFunctionTool(PowerLLMTool):
             return await hass.loop.run_in_executor(
                 None, lambda: self.function(**kwargs)
             )
+        except (HomeAssistantError, vol.Invalid):
+            raise
         except Exception as e:
-            return {"error": type(e).__name__, "message": str(e)}
+            raise HomeAssistantError(
+                f"Error calling {self.name} ({type(e).__name__}): {e}"
+            ) from e
 
 
 @callback
