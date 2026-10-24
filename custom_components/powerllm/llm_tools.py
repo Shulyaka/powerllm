@@ -57,6 +57,14 @@ class PowerFunctionTool(PowerLLMTool):
 
         self.function = function
 
+        if self.integration == DOMAIN:
+            module = getattr(inspect.unwrap(function), "__module__", None) or ""
+            for prefix in ("custom_components.", "homeassistant.components."):
+                if module.startswith(prefix):
+                    domain = module.removeprefix(prefix).partition(".")[0]
+                    self.integration = domain or DOMAIN
+                    break
+
         self.name = function.__name__
         self.name = self.name.removeprefix("async_")
 
