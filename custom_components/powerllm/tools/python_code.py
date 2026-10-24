@@ -33,7 +33,10 @@ _LOGGER = logging.getLogger(__name__)
 class MyHandler(logging.Handler):
     """Log handler that saves the logs in memory."""
 
-    logs: list[logging.LogRecord] = []
+    def __init__(self):
+        """Create a buffer for this execution."""
+        super().__init__()
+        self.logs: list[logging.LogRecord] = []
 
     def emit(self, record: logging.LogRecord):
         """Save the record."""
@@ -49,14 +52,18 @@ def python_code_execute(hass: HomeAssistant, source: str):
     and `print` for printing.
     """
     log_handler = MyHandler()
-    logger = logging.getLogger(f"{__name__}.script")
-    logger.setLevel(logging.DEBUG)
+    # Keep captures separate without retaining per-call loggers in the registry.
+    logger = logging.Logger(f"{__name__}.script", level=logging.DEBUG)
+    logger.parent = logging.getLogger(logger.name)
+    logger.manager = logging.Manager(logger)
+    logger.manager.disable = logger.parent.manager.disable
     logger.addHandler(log_handler)
     try:
         printed = []
-        output = execute(hass, source, printed)
+        output = execute(hass, source, printed, logger=logger)
     finally:
         logger.removeHandler(log_handler)
+        log_handler.close()
 
     result = {"output": output}
     if printed:
@@ -157,7 +164,13 @@ def guarded_inplacevar(op: str, target: Any, operand: Any) -> Any:
     return op_fun(target, operand)
 
 
-def execute(hass, source, printed: list[str] | None = None):
+def execute(
+    hass,
+    source,
+    printed: list[str] | None = None,
+    *,
+    logger: logging.Logger | None = None,
+):
     """Execute Python source."""
 
     if printed is None:
@@ -168,7 +181,8 @@ def execute(hass, source, printed: list[str] | None = None):
     if compiled.errors:
         raise ScriptError("Compile error: %s", ", ".join(compiled.errors))
 
-    logger = logging.getLogger(f"{__name__}.script")
+    if logger is None:
+        logger = logging.getLogger(f"{__name__}.script")
 
     compiled_warnings = [
         w
