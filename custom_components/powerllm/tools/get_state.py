@@ -145,17 +145,18 @@ def _area_name(hass: HomeAssistant, lookup_value: str) -> str | None:
             # If entity has an area ID, get the area name for that
             if entity.area_id:
                 return _get_area_name(area_reg, entity.area_id)
-            # If entity has a device ID and the device exists with an area ID, get the
-            # area name for that
+            # Otherwise use the device's own or inherited area.
             if (
                 entity.device_id
                 and (device := dev_reg.async_get(entity.device_id))
-                and device.area_id
+                and (area_id := dr.async_get_effective_area_id(hass, device))
             ):
-                return _get_area_name(area_reg, device.area_id)
+                return _get_area_name(area_reg, area_id)
 
-    if (device := dev_reg.async_get(lookup_value)) and device.area_id:
-        return _get_area_name(area_reg, device.area_id)
+    if (device := dev_reg.async_get(lookup_value)) and (
+        area_id := dr.async_get_effective_area_id(hass, device)
+    ):
+        return _get_area_name(area_reg, area_id)
 
     return None
 
@@ -254,7 +255,9 @@ class GetStateTool(PowerLLMTool):
             floor: fr.FloorEntry | None = None
             if device:
                 area_reg = ar.async_get(hass)
-                if device.area_id and (area := area_reg.async_get_area(device.area_id)):
+                if (area_id := dr.async_get_effective_area_id(hass, device)) and (
+                    area := area_reg.async_get_area(area_id)
+                ):
                     if area.floor_id:
                         floor_reg = fr.async_get(hass)
                         floor = floor_reg.async_get_floor(area.floor_id)
