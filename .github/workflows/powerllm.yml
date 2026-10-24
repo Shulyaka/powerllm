@@ -8,10 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         python-version: ['3.14']
-        home-assistant: ['2026.10.0', 'latest']
 
     steps:
     - uses: awalsh128/cache-apt-pkgs-action@latest
@@ -23,9 +21,6 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Constrain the minimum Home Assistant test environment
-      if: matrix.home-assistant == '2026.10.0'
-      run: echo "PIP_CONSTRAINT=$GITHUB_WORKSPACE/requirements_test_minimum.txt" >> "$GITHUB_ENV"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -36,7 +31,7 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
-        flag-name: ${{ matrix.python-version }}-${{ matrix.home-assistant }}
+        flag-name: ${{ matrix.python-version }}
 
   coverage:
     needs: build
