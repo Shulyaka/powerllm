@@ -11,12 +11,21 @@ from homeassistant.components.conversation import DOMAIN as CONVERSATION_DOMAIN
 from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.components.http.data_validator import RequestDataValidator
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers import config_validation as cv, llm
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _http_status_for_error(error: Exception) -> HTTPStatus:
+    """Map permission and lookup failures to their HTTP status."""
+    if isinstance(error, Unauthorized):
+        return HTTPStatus.FORBIDDEN
+    if str(error).endswith(" not found"):
+        return HTTPStatus.NOT_FOUND
+    return HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class LLMToolsApiView(HomeAssistantView):
@@ -60,11 +69,7 @@ class LLMToolsListView(HomeAssistantView):
         except HomeAssistantError as e:
             return self.json_message(
                 str(e),
-                (
-                    HTTPStatus.NOT_FOUND
-                    if str(e).endswith(" not found")
-                    else HTTPStatus.INTERNAL_SERVER_ERROR
-                ),
+                _http_status_for_error(e),
             )
 
     @RequestDataValidator(
@@ -98,11 +103,7 @@ class LLMToolsListView(HomeAssistantView):
         except HomeAssistantError as e:
             return self.json_message(
                 str(e),
-                (
-                    HTTPStatus.NOT_FOUND
-                    if str(e).endswith(" not found")
-                    else HTTPStatus.INTERNAL_SERVER_ERROR
-                ),
+                _http_status_for_error(e),
             )
 
 
@@ -161,11 +162,7 @@ class LLMToolView(HomeAssistantView):
             _LOGGER.info("Tool response: %s", tool_response)
             return self.json(
                 tool_response,
-                (
-                    HTTPStatus.NOT_FOUND
-                    if str(e).endswith(" not found")
-                    else HTTPStatus.INTERNAL_SERVER_ERROR
-                ),
+                _http_status_for_error(e),
             )
 
         tool_response = tool_response.data
