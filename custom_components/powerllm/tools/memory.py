@@ -65,6 +65,7 @@ class MemoryTool(PowerLLMTool):
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
     ) -> JsonObjectType:
         """Save a memory item."""
+        args = self.parameters(tool_input.tool_args)
 
         if llm_context.context.user_id is None:
             raise HomeAssistantError("Empty user id")
@@ -92,7 +93,7 @@ class MemoryTool(PowerLLMTool):
         else:
             prompt = ""
         options[CONF_MEMORY_PROMPTS][user_name][llm_context.context.user_id] = (
-            prompt + tool_input.tool_args["text"]
+            prompt + args["text"]
         )
         hass.config_entries.async_update_entry(self._config_entry, options=options)
 

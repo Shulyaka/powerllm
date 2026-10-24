@@ -61,8 +61,9 @@ class DynamicScriptTool(PowerLLMTool):
         self, hass: HomeAssistant, tool_input: ToolInput, llm_context: LLMContext
     ) -> JsonObjectType:
         """Execute a script in Home Assistant."""
+        args = self.parameters(tool_input.tool_args)
         context = llm_context.context
-        script = tool_input.tool_args["script"]
+        script = args["script"]
 
         if isinstance(script, str):
             script = parse_yaml(script)

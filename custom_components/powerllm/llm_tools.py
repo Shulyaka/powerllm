@@ -125,7 +125,7 @@ class PowerFunctionTool(PowerLLMTool):
         llm_context: llm.LLMContext,
     ) -> Any:
         """Call the function."""
-        kwargs = tool_input.tool_args.copy()
+        kwargs = self.parameters(tool_input.tool_args)
         for parameter in inspect.signature(self.function).parameters.values():
             if parameter.name == "hass":
                 kwargs["hass"] = hass
