@@ -20,14 +20,14 @@ Please feel free to raise an issue if you have an idea of another useful tool!
 
 ## Installation
 
-Requires Home Assistant 2026.10.0 or later.
+Requires Home Assistant 2026.11.0 or later.
 
 1. Copy `custom_components/powerllm` directory from this repository into `custom_components/` directory in your config directory. Optionally use HACS for this step.
 2. Restart Home Assistant
 3. Add a config entry by going to Settings -> Device and Services -> Add integration or by pressing here: [![Add integration to My HA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=powerllm). If you only need the HTTP API but not the extra tools, then you can just add `powerllm:` into your `configuration.yaml` instead.
-4. Configure your LLM integrations, such as [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) [![Show integration on My HA](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=openai_conversation) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) [![Show integration on My HA](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=google_generative_ai_conversation) to select **both Assist and your Power LLM API**. Assist provides home control, timers, exposed scripts, calendars, to-do lists, live context, and date/time. PowerLLM provides the additional tools.
+4. Configure your LLM integrations, such as [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) [![Show integration on My HA](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=openai_conversation) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) [![Show integration on My HA](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=google_generative_ai_conversation) to select **both Device control and your Power LLM API**. Device control (formerly Assist) provides home control, timers, exposed scripts, calendars, to-do lists, live context, and date/time. PowerLLM provides the additional tools.
 
-When upgrading a pre-HA2026.8 installation, add Assist to every conversation agent that previously selected only PowerLLM. PowerLLM no longer duplicates Assist tools or automatically exposes registered intents. Integrations should contribute those tools through Home Assistant's `llm` platform. PowerLLM's custom-tool registration framework remains available.
+When upgrading a pre-HA2026.8 installation, add Device control to every conversation agent that previously selected only PowerLLM. PowerLLM no longer duplicates its tools or automatically exposes registered intents. Integrations should contribute those tools through Home Assistant's `llm` platform. PowerLLM's custom-tool registration framework remains available.
 
 ## Configuration
 
@@ -36,7 +36,10 @@ There are following configuration options available:
 * ### Tool selection
   Select which PowerLLM tools the model may call. `HassGetState` is a normal selectable tool that always returns detailed states for matching entities, including entity IDs, attributes, aliases, area/floor, and time since the last state change. It can query both entities matching a requested state and those that do not match.
 
-  Assist controls its own tools and entity overview. The former options to include exposed entities in the prompt and attach entity states to every intent response have been removed. An upgrade preserves a previously disabled `HassGetState` in tool selection. Detailed state queries remain available as a separate tool call; Assist's control responses are unchanged.
+  Device control manages its own tools and entity overview. The former options to include exposed entities in the prompt and attach entity states to every intent response have been removed. An upgrade preserves a previously disabled `HassGetState` in tool selection. Detailed state queries remain available as a separate tool call; Device control's responses are unchanged.
+
+* ### Require administrator
+  Restrict this API to administrator accounts. Disabled by default. Enable it for API configurations that provide Python execution or unrestricted scripts. The restriction also applies when this API is selected together with other APIs. You can create separate PowerLLM entries with different tool selections and access requirements. Existing conversations retain their access until they end.
 
 * ### DuckDuckGo Region
   The server location used for web and news search. You can safely leave it as `No Region`.
@@ -49,15 +52,17 @@ There are following configuration options available:
 * ### Facts that the model remembers for each user
   These field contain the facts that the LLM chose to remember about the user for each `user_id`. You can also ask LLM to remember something about you. This option is presented here in case you want to delete something.
 
+  Facts are saved immediately. Home Assistant retains the system prompt during a conversation, so changes to remembered facts appear in the prompt of new conversations.
+
 ## HTTP API
 
-HTTP clients that previously fetched all tools from `/api/powerllm/powerllm` must also fetch `/api/powerllm/assist` and send each tool call to its owning API. These endpoints expose one API at a time. Conversation integrations selecting both APIs use Home Assistant's merged API, which prefixes tool names with their API namespace.
+HTTP clients that previously fetched all tools from `/api/powerllm/powerllm` must also fetch `/api/powerllm/assist` and send each tool call to its owning API. These endpoints expose one API at a time. The Device control API retains the ID `assist`. Conversation integrations selecting multiple APIs use Home Assistant's merged API, which leaves unique tool names unchanged and prefixes conflicting names with their API ID namespace.
 
 This is an extension of [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/) providing LLM-specific endpoints, such as:
 
 * GET `/api/powerllm`
 
-  Returns the list available LLM API, such as 'Assist', 'Power LLM', etc
+  Returns available LLM APIs, including Device control, Home Assistant, and configured PowerLLM APIs, with their `id`, `name`, and `requires_admin` flag.
 
 * GET `/api/powerllm/<api>`
 

@@ -8,8 +8,9 @@ from homeassistant.components.homeassistant.exposed_entities import async_expose
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError, Unauthorized, UnknownUser
 from homeassistant.helpers import llm, selector
-from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
+from pytest_homeassistant.typing import ClientSessionGenerator
 
+from custom_components.powerllm.const import CONF_REQUIRE_ADMIN
 from custom_components.powerllm.http import async_llm_tools_json
 from custom_components.powerllm.llm_tools import (
     PowerLLMTool,
@@ -22,13 +23,14 @@ from custom_components.powerllm.llm_tools import (
 async def test_http_api_list(
     hass_client: ClientSessionGenerator, assist_api: llm.API
 ) -> None:
-    """Both API owners remain available through HTTP."""
+    """Discover built-in and custom APIs with their permission requirements."""
     client = await hass_client()
     response = await client.get("/api/powerllm")
     assert response.status == 200
     assert await response.json() == [
-        {"name": assist_api.name, "id": "assist"},
-        {"name": "PowerLLM", "id": "powerllm"},
+        {"name": assist_api.name, "id": "assist", "requires_admin": False},
+        {"name": "Home Assistant", "id": "homeassistant", "requires_admin": True},
+        {"name": "PowerLLM", "id": "powerllm", "requires_admin": False},
     ]
 
 
@@ -138,7 +140,7 @@ async def test_http_tool_default_metadata(
 async def test_merged_tool_metadata(
     hass: HomeAssistant, llm_context: llm.LLMContext
 ) -> None:
-    """Serialize the original provider metadata after HA namespaces merged tools."""
+    """Serialize original metadata when merged tool names have no conflict."""
     tool = PowerLLMTool()
     tool.name = "external_tool"
     tool.title = "External query"
@@ -151,8 +153,8 @@ async def test_merged_tool_metadata(
 
     tools = {tool["name"]: tool for tool in async_llm_tools_json(api)}
 
-    assert tools["powerllm__external_tool"] == {
-        "name": "powerllm__external_tool",
+    assert tools["external_tool"] == {
+        "name": "external_tool",
         "title": "External query",
         "integration": "external_provider",
         "annotations": {
@@ -404,3 +406,87 @@ async def test_http_permission_error_before_not_found(
 
     assert response.status == 403
     assert (await response.json())["error_text"] == "Private resource not found"
+
+
+@pytest.mark.usefixtures("mock_init_component")
+@pytest.mark.parametrize("is_admin", [False, True])
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/powerllm/powerllm"),
+        ("post", "/api/powerllm/powerllm"),
+        ("post", "/api/powerllm/powerllm/private_tool"),
+    ],
+)
+async def test_http_native_admin_permission(
+    hass: HomeAssistant,
+    hass_client_no_auth: ClientSessionGenerator,
+    hass_admin_user,
+    hass_read_only_user,
+    mock_config_entry,
+    is_admin: bool,
+    method: str,
+    path: str,
+) -> None:
+    """Use HA's real authorization before listing or executing restricted tools."""
+    called = False
+
+    @llm_tool(hass)
+    @callback
+    def private_tool():
+        nonlocal called
+        called = True
+        return {"success": True}
+
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={**mock_config_entry.options, CONF_REQUIRE_ADMIN: True},
+    )
+    await hass.async_block_till_done()
+    user = hass_admin_user if is_admin else hass_read_only_user
+    refresh_token = await hass.auth.async_create_refresh_token(
+        user, client_id="https://example.com"
+    )
+    token = hass.auth.async_create_access_token(refresh_token)
+    client = await hass_client_no_auth()
+
+    response = await client.request(
+        method, path, headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status == (200 if is_admin else 403)
+    assert called is (is_admin and path.endswith("/private_tool"))
+    if is_admin and called:
+        assert await response.json() == {"success": True}
+    elif not is_admin and path.endswith("/private_tool"):
+        assert (await response.json())["error"] == "Unauthorized"
+
+
+@pytest.mark.usefixtures("mock_init_component")
+async def test_http_admin_option_updates(
+    hass: HomeAssistant,
+    hass_client_no_auth: ClientSessionGenerator,
+    hass_read_only_user,
+    mock_config_entry,
+) -> None:
+    """Apply permission changes and discovery metadata without restarting HA."""
+    refresh_token = await hass.auth.async_create_refresh_token(
+        hass_read_only_user, client_id="https://example.com"
+    )
+    token = hass.auth.async_create_access_token(refresh_token)
+    headers = {"Authorization": f"Bearer {token}"}
+    client = await hass_client_no_auth()
+
+    for require_admin in (True, False):
+        hass.config_entries.async_update_entry(
+            mock_config_entry,
+            options={**mock_config_entry.options, CONF_REQUIRE_ADMIN: require_admin},
+        )
+        await hass.async_block_till_done()
+
+        response = await client.get("/api/powerllm", headers=headers)
+        assert response.status == 200
+        api = next(api for api in await response.json() if api["id"] == "powerllm")
+        assert api["requires_admin"] is require_admin
+        response = await client.get("/api/powerllm/powerllm", headers=headers)
+        assert response.status == (403 if require_admin else 200)

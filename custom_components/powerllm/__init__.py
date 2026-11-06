@@ -12,6 +12,7 @@ from .const import (
     CONF_INTENT_ENTITIES,
     CONF_MEMORY_PROMPTS,
     CONF_PROMPT_ENTITIES,
+    CONF_REQUIRE_ADMIN,
     CONF_TOOL_SELECTION,
     DOMAIN,
 )
@@ -33,6 +34,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     api = PowerLLMAPI(hass, entry)
     entry.async_on_unload(llm.async_register_api(hass, api))
+
+    async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Apply permission changes to newly requested API instances."""
+        api.requires_admin = entry.options.get(CONF_REQUIRE_ADMIN, False)
+
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
     return True
 
 

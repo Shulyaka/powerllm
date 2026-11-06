@@ -9,12 +9,14 @@
       "init": {
         "data": {
           "duckduckgo_region": "DuckDuckGo Region",
-          "script_exposed_only": "Only allow referencing exposed entities in scripts"
+          "script_exposed_only": "Only allow referencing exposed entities in scripts",
+          "require_admin": "Require administrator"
         },
         "data_description": {
-          "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
+          "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities",
+          "require_admin": "Only administrators may use this API, including when it is selected together with other APIs."
         },
-        "description": "Select both Assist and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
+        "description": "Select both Device control and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
       },
       "memory_prompts": {
         "title": "Memory tool prompts",
@@ -22,7 +24,7 @@
       },
       "tool_selection": {
         "title": "Tool selection",
-        "description": "Select PowerLLM tools available for this API. These settings do not filter Assist tools.",
+        "description": "Select PowerLLM tools available for this API. These settings do not filter Device control tools.",
         "data": {
           "default": "Default"
         },
@@ -37,12 +39,14 @@
       "init": {
         "data": {
           "duckduckgo_region": "DuckDuckGo Region",
-          "script_exposed_only": "Only allow referencing exposed entities in scripts"
+          "script_exposed_only": "Only allow referencing exposed entities in scripts",
+          "require_admin": "Require administrator"
         },
         "data_description": {
-          "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities"
+          "script_exposed_only": "Disabling would allow more complicated scripts, but could affect unexposed entities",
+          "require_admin": "Only administrators may use this API, including when it is selected together with other APIs."
         },
-        "description": "Select both Assist and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
+        "description": "Select both Device control and this PowerLLM API in your conversation agent to use home control together with PowerLLM tools."
       },
       "memory_prompts": {
         "title": "Memory tool prompts",
@@ -50,7 +54,7 @@
       },
       "tool_selection": {
         "title": "Tool selection",
-        "description": "Select PowerLLM tools available for this API. These settings do not filter Assist tools.",
+        "description": "Select PowerLLM tools available for this API. These settings do not filter Device control tools.",
         "data": {
           "default": "Default"
         },

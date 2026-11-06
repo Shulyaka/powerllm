@@ -15,7 +15,7 @@ from homeassistant.helpers import (
     intent,
     llm,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.powerllm.tools.get_state import (
     GetStateTool,

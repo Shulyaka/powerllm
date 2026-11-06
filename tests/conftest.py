@@ -6,7 +6,7 @@ import pytest
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.setup import async_setup_component
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.powerllm import DOMAIN
 
@@ -14,12 +14,10 @@ from . import tool_result_data
 from .const import MOCK_CONFIG, MOCK_OPTIONS_CONFIG
 
 
-# This fixture enables loading custom integrations in all tests.
-# Remove to enable selective use of this fixture
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Enable custom integrations."""
-    yield
+@pytest.fixture
+def hass_config_dir(hass_tmp_config_dir: str) -> str:
+    """Give each Home Assistant instance a writable configuration directory."""
+    return hass_tmp_config_dir
 
 
 @pytest.fixture(autouse=True)
@@ -72,15 +70,10 @@ async def mock_init_component(hass, mock_config_entry):
     await hass.async_block_till_done()
 
 
-@pytest.fixture(params=[None, "Device control"], ids=["native-name", "renamed-api"])
-def assist_api(
-    hass: HomeAssistant, mock_init_component, monkeypatch: pytest.MonkeyPatch, request
-) -> llm.API:
-    """Exercise the registered Assist API with its current and a renamed label."""
-    api = next(api for api in llm.async_get_apis(hass) if api.id == "assist")
-    if request.param is not None:
-        monkeypatch.setattr(api, "name", request.param)
-    return api
+@pytest.fixture
+def assist_api(hass: HomeAssistant, mock_init_component) -> llm.API:
+    """Return the native Device control API by its stable ID."""
+    return next(api for api in llm.async_get_apis(hass) if api.id == "assist")
 
 
 @pytest.fixture(autouse=True)

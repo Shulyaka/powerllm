@@ -5,7 +5,9 @@ pylint
 pytest-trio
 pytest-twisted
 pytest-tornasync
-pytest-homeassistant-custom-component
+pytest-homeassistant>=2026.11.0
+pytest-cov
+pytest-timeout
 home_assistant_intents
 service_identity
 pyspeex_noise
@@ -17,3 +19,5 @@ pymicro-vad
 ddgs==9.16.0
 RestrictedPython
 trafilatura
+mcp==2.3.0
+aiohttp_sse==2.2.0

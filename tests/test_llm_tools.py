@@ -1,5 +1,6 @@
 """Test powerllm config flow."""
 
+from dataclasses import replace
 from functools import wraps
 from unittest.mock import Mock
 
@@ -263,6 +264,39 @@ async def test_async_function_tool(
         "platform": "test_platform",
         "required_arg": 4,
     }
+
+
+@pytest.mark.parametrize("agent_id", [None, "conversation.test"])
+async def test_function_tool_agent_context(
+    hass: HomeAssistant, llm_context: llm.LLMContext, agent_id: str | None
+) -> None:
+    """Inject the native agent ID and reject attempts to supply it as an argument."""
+    calls = Mock()
+
+    @callback
+    def agent_tool(value: str, agent_id: str | None) -> dict[str, str | None]:
+        calls(value, agent_id)
+        return {"agent_id": agent_id}
+
+    tool = llm_tools.PowerFunctionTool(agent_tool)
+    context = replace(llm_context, agent_id=agent_id)
+    result = await tool.async_call(
+        hass, llm.ToolInput(tool_name=tool.name, tool_args={"value": "test"}), context
+    )
+    assert tool_result_data(result) == {"agent_id": agent_id}
+    calls.assert_called_once_with("test", agent_id)
+    calls.reset_mock()
+
+    with pytest.raises(vol.Invalid):
+        await tool.async_call(
+            hass,
+            llm.ToolInput(
+                tool_name=tool.name,
+                tool_args={"value": "test", "agent_id": "conversation.spoofed"},
+            ),
+            context,
+        )
+    calls.assert_not_called()
 
 
 @pytest.mark.parametrize("execution", ["async", "callback", "executor"])

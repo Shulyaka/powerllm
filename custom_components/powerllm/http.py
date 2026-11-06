@@ -39,7 +39,14 @@ class LLMToolsApiView(HomeAssistantView):
         """Get LLM Tools list."""
         hass = request.app[KEY_HASS]
         return self.json(
-            [{"name": api.name, "id": api.id} for api in llm.async_get_apis(hass)]
+            [
+                {
+                    "name": api.name,
+                    "id": api.id,
+                    "requires_admin": api.requires_admin,
+                }
+                for api in llm.async_get_apis(hass)
+            ]
         )
 
 
