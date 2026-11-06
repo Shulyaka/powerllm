@@ -284,7 +284,7 @@ class GetStateTool(PowerLLMTool):
             assistant=llm_context.assistant,
             device_id=llm_context.device_id,
         )
-        return llm.ToolResult(data=GetStateResponseDict(intent_response, hass))
+        return llm.ToolResult(data=dict(GetStateResponseDict(intent_response, hass)))
 
 
 class GetStateResponseDict(dict):
