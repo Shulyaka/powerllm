@@ -7,11 +7,12 @@ from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_DEFAULT
 from homeassistant.core import HomeAssistant
 from primp import BuilderError
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.powerllm import async_migrate_entry
 from custom_components.powerllm.const import (
     CONF_DUCKDUCKGO_REGION,
+    CONF_REQUIRE_ADMIN,
     CONF_SCRIPT_EXPOSED_ONLY,
     CONF_TOOL_SELECTION,
     DOMAIN,
@@ -30,7 +31,8 @@ def bypass_setup_fixture():
         yield
 
 
-async def test_config_flow(hass: HomeAssistant):
+@pytest.mark.parametrize("require_admin", [False, True])
+async def test_config_flow(hass: HomeAssistant, require_admin: bool):
     """Test a successful config flow."""
     # Init first step
     result = await hass.config_entries.flow.async_init(
@@ -48,12 +50,14 @@ async def test_config_flow(hass: HomeAssistant):
     assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "init"
 
+    expected_options = {**MOCK_OPTIONS_CONFIG, CONF_REQUIRE_ADMIN: require_admin}
+
     # Advance to step 3
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             k: v
-            for k, v in MOCK_OPTIONS_CONFIG.items()
+            for k, v in expected_options.items()
             if k not in {"memory_prompts", "tool_selection"}
         },
     )
@@ -79,23 +83,33 @@ async def test_config_flow(hass: HomeAssistant):
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "PowerLLM"
     assert result["data"] == MOCK_CONFIG
-    assert result["options"] == MOCK_OPTIONS_CONFIG
+    assert result["options"] == expected_options
     assert result["result"]
 
 
+@pytest.mark.parametrize("require_admin", [False, True])
 async def test_options_flow(
-    hass: HomeAssistant, mock_config_entry, mock_init_component
+    hass: HomeAssistant, mock_config_entry, mock_init_component, require_admin: bool
 ) -> None:
     """Test a successful options flow."""
+    previous_options = dict(mock_config_entry.options)
+    if require_admin:
+        previous_options.pop(CONF_REQUIRE_ADMIN)
+    else:
+        previous_options[CONF_REQUIRE_ADMIN] = True
+    hass.config_entries.async_update_entry(mock_config_entry, options=previous_options)
     options = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
     assert options["type"] == data_entry_flow.FlowResultType.FORM
     assert options["step_id"] == "init"
+    if require_admin:
+        assert options["data_schema"]({})[CONF_REQUIRE_ADMIN] is False
 
     options = await hass.config_entries.options.async_configure(
         options["flow_id"],
         {
             CONF_DUCKDUCKGO_REGION: "us-en",
             CONF_SCRIPT_EXPOSED_ONLY: False,
+            CONF_REQUIRE_ADMIN: require_admin,
         },
     )
     assert options["type"] == data_entry_flow.FlowResultType.FORM
@@ -115,6 +129,7 @@ async def test_options_flow(
     assert options["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
     assert options["data"][CONF_DUCKDUCKGO_REGION] == "us-en"
     assert options["data"][CONF_SCRIPT_EXPOSED_ONLY] is False
+    assert options["data"][CONF_REQUIRE_ADMIN] is require_admin
     assert options["data"][CONF_TOOL_SELECTION][CONF_DEFAULT] is True
 
 

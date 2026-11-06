@@ -17,6 +17,7 @@ from .api import PowerLLMAPI
 from .const import (
     CONF_DUCKDUCKGO_REGION,
     CONF_MEMORY_PROMPTS,
+    CONF_REQUIRE_ADMIN,
     CONF_SCRIPT_EXPOSED_ONLY,
     CONF_TOOL_SELECTION,
     DOMAIN,
@@ -179,6 +180,7 @@ class PowerLLMFlow(RecursiveConfigFlow, domain=DOMAIN, data_schema=DATA_SCHEMA):
                     ),
                 ),
                 vol.Required(CONF_SCRIPT_EXPOSED_ONLY, default=True): bool,
+                vol.Required(CONF_REQUIRE_ADMIN, default=False): bool,
                 vol.Optional(CONF_MEMORY_PROMPTS): vol.Schema(
                     {
                         vol.Optional(user.name): section(

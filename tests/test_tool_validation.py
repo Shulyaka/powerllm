@@ -6,7 +6,7 @@ import probatio as vol
 import pytest
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import llm
-from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
+from pytest_homeassistant.typing import ClientSessionGenerator
 
 from custom_components.powerllm.llm_tools import PowerFunctionTool, async_register_tool
 

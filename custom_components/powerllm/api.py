@@ -10,6 +10,7 @@ from homeassistant.helpers import llm
 
 from .const import (
     CONF_DUCKDUCKGO_REGION,
+    CONF_REQUIRE_ADMIN,
     CONF_SCRIPT_EXPOSED_ONLY,
     CONF_TOOL_SELECTION,
     DOMAIN,
@@ -30,6 +31,7 @@ class PowerLLMAPI(llm.API):
             hass=hass,
             id=unicode_slug.slugify(config_entry.data[CONF_NAME], separator="_"),
             name=config_entry.data[CONF_NAME],
+            requires_admin=config_entry.options.get(CONF_REQUIRE_ADMIN, False),
         )
         self.config_entry = config_entry
 
