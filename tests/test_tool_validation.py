@@ -54,7 +54,7 @@ async def test_function_rejects_invalid_arguments(
         hass, ["assist", "powerllm"] if merged else "powerllm", llm_context
     )
     tool_input = llm.ToolInput(
-        tool_name=f"powerllm__{tool.name}" if merged else tool.name,
+        tool_name=tool.name,
         tool_args=args.copy(),
     )
 
@@ -89,7 +89,7 @@ async def test_function_uses_validated_arguments(
         hass, ["assist", "powerllm"] if merged else "powerllm", llm_context
     )
     tool_input = llm.ToolInput(
-        tool_name="powerllm__checked" if merged else "checked",
+        tool_name="checked",
         tool_args={"value": "3"},
     )
 
@@ -137,7 +137,7 @@ async def test_builtin_rejects_invalid_arguments(
     ):
         await api.async_call_tool(
             llm.ToolInput(
-                tool_name=f"powerllm__{tool_name}" if merged else tool_name,
+                tool_name=tool_name,
                 tool_args=args,
             )
         )
@@ -172,7 +172,7 @@ async def test_search_uses_schema_defaults_and_conversions(
         hass, ["assist", "powerllm"] if merged else "powerllm", llm_context
     )
     tool_input = llm.ToolInput(
-        tool_name=f"powerllm__{tool_name}" if merged else tool_name,
+        tool_name=tool_name,
         tool_args={query_arg: "Home Assistant", **extra_args},
     )
     with patch("custom_components.powerllm.tools.duckduckgo.DDGS") as search:
