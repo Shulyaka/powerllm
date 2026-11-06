@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import probatio as vol
 import pytest
+from homeassistant.components.conversation.chat_log import ToolResultContent
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import Context, HomeAssistant, State
 from homeassistant.helpers import (
@@ -23,6 +24,44 @@ from custom_components.powerllm.tools.get_state import (
 )
 
 from tests import tool_result_data
+
+
+async def test_get_state_chat_log_serialization(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    mock_init_component,
+) -> None:
+    """Serialize detailed thermostat states through the conversation chat log."""
+    hass.states.async_set(
+        "climate.ecobee",
+        "heat_cool",
+        {
+            "friendly_name": "My ecobee",
+            "target_temp_low": 19.0,
+            "target_temp_high": 24.0,
+        },
+    )
+    async_expose_entity(hass, "conversation", "climate.ecobee", True)
+    api = await llm.async_get_api(hass, "powerllm", llm_context)
+
+    result = await api.async_call_tool(
+        llm.ToolInput(tool_name="HassGetState", tool_args={"name": "My ecobee"})
+    )
+    content = ToolResultContent(
+        agent_id="test_agent",
+        tool_call_id="test_call",
+        tool_name="HassGetState",
+        result=result,
+    ).as_dict()
+
+    assert content["result"] == {"data": tool_result_data(result), "error": False}
+    matched_states = content["result"]["data"]["data"]["matched_states"]
+    assert len(matched_states) == 1
+    assert matched_states[0]["entity_id"] == "climate.ecobee"
+    assert matched_states[0]["attributes"] == {
+        "target_temp_low": 19.0,
+        "target_temp_high": 24.0,
+    }
 
 
 @pytest.fixture
